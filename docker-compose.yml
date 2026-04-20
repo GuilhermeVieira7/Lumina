@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # Servico de Banco de Dados Postgres (Roda isolado em container)
+  db:
+    image: postgres:15-alpine
+    container_name: tea_database
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Aplicacao (Servira a API do FastAPI e o Frontend HTML)
+  app:
+    build: .
+    container_name: tea_application
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "80:80"
+    environment:
+      # Inject DATABASE_URL so SQLAlchemy in FastAPI hooks into the Postgres container smoothly
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    volumes:
+      # Volumes compartilhados se precisar que dados locais subam
+      # - ./backend:/app/backend
+      # - ./frontend:/app/frontend
+      - /app/backend/__pycache__
+    
+volumes:
+  pgdata:
