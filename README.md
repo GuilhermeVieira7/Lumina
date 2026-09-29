@@ -42,12 +42,14 @@ Aguarde a mensagem: `Uvicorn running on http://127.0.0.1:8000`
 4. **Quadro de fichas** — antes da atividade, a criança escolhe o prêmio; cada etapa vale uma ⭐ e a trilha termina no prêmio. O adulto escolhe os prêmios em Painel → Ajustes.
 5. **Prancha de pedidos** — botão "Pedir" sempre visível na área da criança (pausa, ajuda, água, banheiro, sim, não...). O pedido é falado em voz alta e aparece no Diário e no relatório.
 6. **Como estou me sentindo?** — ao entrar na sua área, a criança toca no rosto que mostra como está (feliz, calmo, triste, bravo, com medo, cansado). O Lumina fala a frase e, nas emoções difíceis, oferece "Pedir ajuda". Os adultos veem as emoções por dia no gráfico do Progresso, no Diário e no relatório PDF. Pode ser desligado em Painel → Ajustes.
-7. **Recomendação explicável** — `backend/ai_engine.py`: regras de domínio e de dificuldade (ABA) e pontuação por interesses, metas, desempenho e variedade. Cada sugestão mostra os motivos e só vale depois que um adulto aceita, ajusta ou descarta.
-8. **Painel dos Adultos protegido por senha** — progresso por área e período, sessões com nível de ajuda, diário de observações, metas, plano de atividades, rotina, perfil e ajustes sensoriais.
-9. **Acompanhamento compartilhado** — o responsável convida um profissional, que aceita o convite; o acesso pode ser revogado a qualquer momento.
-10. **LGPD** — consentimento no cadastro, perfil sem diagnóstico, exclusão da criança ou da conta com todos os dados.
-11. **Relatório em PDF** — Painel → Progresso → "Relatório PDF".
-12. **API REST documentada** — http://127.0.0.1:8000/api/docs (Swagger interativo).
+7. **Várias crianças por família** — cada criança pode ter foto (tirada no celular ou escolhida da galeria, reduzida no navegador e guardada só na conta do responsável). Na tela "Quem vai usar agora?" e no topo do Painel dos Adultos, um toque na foto troca a criança.
+8. **Acessibilidade (WCAG 2.1 AA)** — contraste mínimo de 4,5:1 em todos os temas, alvos de toque de pelo menos 44 px, títulos em ordem, região principal, janelas que prendem o foco do teclado e devolvem o foco ao fechar. Revisado com axe-core em 25 telas e 5 temas, sem violações.
+9. **Recomendação explicável** — `backend/ai_engine.py`: regras de domínio e de dificuldade (ABA) e pontuação por interesses, metas, desempenho e variedade. Cada sugestão mostra os motivos e só vale depois que um adulto aceita, ajusta ou descarta.
+10. **Painel dos Adultos protegido por senha** — progresso por área e período, sessões com nível de ajuda, diário de observações, metas, plano de atividades, rotina, perfil e ajustes sensoriais.
+11. **Acompanhamento compartilhado** — o responsável convida um profissional, que aceita o convite; o acesso pode ser revogado a qualquer momento.
+12. **LGPD** — consentimento no cadastro, perfil sem diagnóstico, exclusão da criança ou da conta com todos os dados.
+13. **Relatório em PDF** — Painel → Progresso → "Relatório PDF".
+14. **API REST documentada** — http://127.0.0.1:8000/api/docs (Swagger interativo).
 
 Testes automatizados: `pip install -r requirements-dev.txt` e `pytest` na raiz do projeto.
 

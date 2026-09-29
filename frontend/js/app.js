@@ -86,7 +86,7 @@ const App = {
         document.getElementById('enter-child').disabled = false;
         row.innerHTML = this.profiles.map(p => `
             <button class="profile-pick" data-profile="${p.id}" aria-pressed="${this.profile && p.id === this.profile.id}">
-                <span class="avatar" aria-hidden="true">${UI.esc(p.avatar)}</span>
+                <span class="avatar" aria-hidden="true">${UI.avatar(p)}</span>
                 ${UI.esc(p.name)}
                 ${p.is_owner ? '' : `<small>de ${UI.esc(p.owner_name)}</small>`}
             </button>`).join('');
@@ -153,7 +153,12 @@ const App = {
         e.preventDefault();
         const form = e.target;
         try {
-            const profile = await API.post('/profiles', UI.readProfileForm(form));
+            let profile = await API.post('/profiles', UI.readProfileForm(form));
+            try {
+                profile = await UI.saveProfilePhoto(form, profile);
+            } catch (err) {
+                UI.toast('A criança foi cadastrada, mas a foto não foi salva: ' + err.message, 'error');
+            }
             UI.close('new-profile-modal');
             UI.toast(`${profile.name} cadastrado(a)!`, 'success');
             localStorage.setItem('tea_profile_id', profile.id);

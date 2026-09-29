@@ -10,7 +10,7 @@ const Child = {
 
     async home() {
         const p = App.profile;
-        document.getElementById('child-avatar').textContent = p.avatar || '😊';
+        document.getElementById('child-avatar').innerHTML = UI.avatar(p);
         document.getElementById('child-hello').textContent = `Olá, ${p.name}!`;
         UI.showScreen('child-home');
 
