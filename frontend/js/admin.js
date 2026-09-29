@@ -26,8 +26,10 @@ const Admin = {
         document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => this.show(t.dataset.tab)));
         document.getElementById('panel-back').addEventListener('click', () => { App.renderSelect(); UI.showScreen('select-screen'); });
         document.getElementById('panel-child-btn').addEventListener('click', () => App.enterChild());
-        document.getElementById('panel-profile').addEventListener('change', async e => {
-            await App.selectProfile(App.profiles.find(p => p.id === Number(e.target.value)));
+        document.getElementById('panel-profile').addEventListener('click', async e => {
+            const btn = e.target.closest('[data-kid]');
+            if (!btn || (App.profile && Number(btn.dataset.kid) === App.profile.id)) return;
+            await App.selectProfile(App.profiles.find(p => p.id === Number(btn.dataset.kid)));
             this.open(this.tab);
         });
         document.querySelectorAll('[data-days]').forEach(b => b.addEventListener('click', () => {
@@ -74,10 +76,13 @@ const Admin = {
     },
 
     _renderProfileSelect() {
-        const select = document.getElementById('panel-profile');
-        select.innerHTML = App.profiles.map(p =>
-            `<option value="${p.id}" ${App.profile && p.id === App.profile.id ? 'selected' : ''}>${UI.esc(p.avatar)} ${UI.esc(p.name)}</option>`).join('');
-        select.classList.toggle('hidden', !App.profiles.length);
+        // Uma foto por criança: um toque troca a criança do painel
+        const row = document.getElementById('panel-profile');
+        row.innerHTML = App.profiles.map(p => `
+            <button class="kid-chip" data-kid="${p.id}" aria-pressed="${!!(App.profile && p.id === App.profile.id)}">
+                <span class="avatar" aria-hidden="true">${UI.avatar(p)}</span>${UI.esc(p.name)}
+            </button>`).join('');
+        row.classList.toggle('hidden', !App.profiles.length);
         document.getElementById('panel-shared').textContent = App.profile && !App.profile.is_owner
             ? `Compartilhado por ${App.profile.owner_name}` : '';
         document.getElementById('panel-child-btn').classList.toggle('hidden', !App.profile);
@@ -336,7 +341,7 @@ const Admin = {
                    <button class="btn btn-soft btn-small" data-rec="${i}" data-action="adjust">✏️ Usar este nível</button>` : '';
             const acceptLabel = sameLevel ? '👍 Ciente, vou dar mais apoio' : r.kind === 'level' ? `✅ Aceitar nível ${r.suggested_level}` : r.kind === 'activity' ? '⭐ Destacar para a criança' : '👍 Ciente';
             return `<div class="card rec-card ${r.type}">
-                <h3><span aria-hidden="true">${icons[r.type] || '💡'}</span>${act ? `<span aria-hidden="true">${act.icon}</span>` : ''} ${UI.esc(r.title)}</h3>
+                <h2><span aria-hidden="true">${icons[r.type] || '💡'}</span>${act ? `<span aria-hidden="true">${act.icon}</span>` : ''} ${UI.esc(r.title)}</h2>
                 <ul>${r.reasons.map(x => `<li>${UI.esc(x)}</li>`).join('')}</ul>
                 ${r.kind === 'activity' ? `<p class="shared-note" style="margin-bottom:10px">${UI.esc(r.message)}</p>` : ''}
                 <div class="rec-actions">
@@ -592,8 +597,10 @@ const Admin = {
     async saveProfile(e) {
         e.preventDefault();
         try {
-            const updated = await API.put(`/profiles/${this.pid}`, UI.readProfileForm(e.target));
+            let updated = await API.put(`/profiles/${this.pid}`, UI.readProfileForm(e.target));
+            updated = await UI.saveProfilePhoto(e.target, updated);
             Object.assign(App.profile, updated);
+            this.loadProfile();
             this._renderProfileSelect();
             UI.toast('Perfil salvo', 'success');
         } catch (err) { this._fail(err); }

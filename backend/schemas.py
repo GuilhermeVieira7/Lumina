@@ -59,11 +59,16 @@ class ProfileUpdate(BaseModel):
     sensory_notes: Optional[str] = Field(None, max_length=300)
     communication: Optional[str] = Field(None, max_length=30)
 
+class ProfilePhoto(BaseModel):
+    # data URL de uma imagem já reduzida no navegador (240x240 px)
+    photo: str = Field(..., max_length=300_000)
+
 class ProfileResponse(BaseModel):
     id: int
     user_id: int
     name: str
     avatar: str
+    photo: Optional[str] = None
     birth_date: Optional[date] = None
     interests: Optional[str] = None
     sensory_notes: Optional[str] = None

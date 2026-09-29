@@ -19,6 +19,7 @@ CREATE TABLE profiles (
 	user_id INTEGER NOT NULL, 
 	name VARCHAR(100) NOT NULL, 
 	avatar VARCHAR(10), 
+	photo TEXT, 
 	birth_date DATE, 
 	interests TEXT, 
 	sensory_notes TEXT, 

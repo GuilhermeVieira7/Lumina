@@ -79,12 +79,34 @@ const UI = {
 
     open(id) {
         const modal = document.getElementById(id);
+        if (modal.classList.contains('hidden')) modal._opener = document.activeElement;
         modal.classList.remove('hidden');
-        const first = modal.querySelector('input, button');
+        if (!modal._trap) {
+            // O Tab fica dentro da janela enquanto ela está aberta (leitor de tela e teclado)
+            modal._trap = e => {
+                if (e.key !== 'Tab') return;
+                const items = [...modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+                    .filter(el => !el.disabled && el.offsetParent !== null);
+                if (!items.length) return;
+                const first = items[0], last = items[items.length - 1];
+                if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+                else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+            };
+            modal.addEventListener('keydown', modal._trap);
+        }
+        const first = modal.querySelector('input:not([type=hidden]), button');
         if (first) first.focus();
     },
 
-    close(id) { document.getElementById(id).classList.add('hidden'); },
+    close(id) {
+        const modal = document.getElementById(id);
+        if (modal.classList.contains('hidden')) return;
+        modal.classList.add('hidden');
+        // Devolve o foco para o botão que abriu a janela
+        const opener = modal._opener;
+        modal._opener = null;
+        if (opener && opener.isConnected && opener.offsetParent !== null) opener.focus();
+    },
 
     /** Pede a senha da conta; resolve com a senha se estiver correta, ou null. */
     askPassword(reason = 'Digite a senha da conta para continuar.') {
@@ -132,12 +154,50 @@ const UI = {
         return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)}h ${minutes % 60}min`;
     },
 
+    /** Foto da criança (quando há) ou o emoji do avatar. */
+    avatar(p, cls = '') {
+        if (p && p.photo) return `<img class="avatar-photo ${cls}" src="${this.esc(p.photo)}" alt="" draggable="false">`;
+        return this.esc((p && p.avatar) || '😊');
+    },
+
+    /** Reduz a foto no navegador para um quadrado de 240 px em JPEG (poucos KB no banco). */
+    resizePhoto(file, size = 240) {
+        return new Promise((resolve, reject) => {
+            if (!file || !file.type.startsWith('image/')) { reject(new Error('Escolha um arquivo de imagem')); return; }
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                const side = Math.min(img.naturalWidth, img.naturalHeight);
+                const canvas = document.createElement('canvas');
+                canvas.width = canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, size, size);
+                ctx.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, size, size);
+                URL.revokeObjectURL(url);
+                resolve(canvas.toDataURL('image/jpeg', 0.85));
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Não foi possível abrir a imagem')); };
+            img.src = url;
+        });
+    },
+
     /** Formulário de perfil da criança (cadastro e edição). */
     renderProfileForm(form, profile, submitLabel) {
         const p = profile || { avatar: '😊' };
         form.innerHTML = `
             <div class="field"><label for="${form.id}-name">Nome ou apelido</label>
                 <input id="${form.id}-name" name="name" maxlength="100" required value="${this.esc(p.name)}"></div>
+            <div class="field"><span class="label" id="${form.id}-photo-label">Foto (opcional)</span>
+                <div class="photo-field">
+                    <span class="photo-preview" data-photo-preview aria-hidden="true"></span>
+                    <div class="photo-actions">
+                        <label class="btn btn-soft btn-small file-btn"><span aria-hidden="true">📷</span> Tirar ou escolher foto
+                            <input type="file" accept="image/*" capture="user" data-photo-input class="sr-only" aria-describedby="${form.id}-photo-hint"></label>
+                        <button type="button" class="btn btn-outline btn-small hidden" data-photo-remove><span aria-hidden="true">🗑️</span> Remover foto</button>
+                    </div>
+                </div>
+                <p class="hint" id="${form.id}-photo-hint">Com a foto, a criança se reconhece na hora de escolher quem vai usar. Ela fica só na sua conta e pode ser removida.</p></div>
             <div class="field"><span class="label">Avatar</span>
                 <div class="emoji-grid" role="group" aria-label="Avatar">
                     ${this.AVATARS.map(a => `<button type="button" data-avatar="${a}" aria-pressed="${a === p.avatar}">${a}</button>`).join('')}
@@ -154,10 +214,40 @@ const UI = {
                 <p class="hint">Não registre diagnósticos ou laudos: o Lumina guarda só o que ajuda nas atividades.</p></div>
             <div class="actions"><button class="btn" type="submit">${submitLabel}</button></div>`;
         form.dataset.avatar = p.avatar || '😊';
+        form.photo = undefined;   // undefined: sem mudança; '': remover; data URL: nova foto
+        const preview = form.querySelector('[data-photo-preview]');
+        const removeBtn = form.querySelector('[data-photo-remove]');
+        const showPhoto = () => {
+            const photo = form.photo === undefined ? p.photo : form.photo;
+            preview.innerHTML = this.avatar({ photo, avatar: form.dataset.avatar });
+            removeBtn.classList.toggle('hidden', !photo);
+        };
         form.querySelectorAll('[data-avatar]').forEach(btn => btn.addEventListener('click', () => {
             form.dataset.avatar = btn.dataset.avatar;
             form.querySelectorAll('[data-avatar]').forEach(b => b.setAttribute('aria-pressed', b === btn));
+            showPhoto();
         }));
+        form.querySelector('[data-photo-input]').addEventListener('change', async e => {
+            try {
+                form.photo = await this.resizePhoto(e.target.files[0]);
+                showPhoto();
+            } catch (err) {
+                this.toast(err.message, 'error');
+            }
+            e.target.value = '';
+        });
+        removeBtn.addEventListener('click', () => { form.photo = ''; showPhoto(); });
+        showPhoto();
+    },
+
+    /** Envia a foto escolhida no formulário (se mudou) e devolve o perfil atualizado. */
+    async saveProfilePhoto(form, profile) {
+        if (form.photo === undefined) return profile;
+        const updated = form.photo
+            ? await API.put(`/profiles/${profile.id}/photo`, { photo: form.photo })
+            : await API.delete(`/profiles/${profile.id}/photo`);
+        form.photo = undefined;
+        return updated;
     },
 
     readProfileForm(form) {

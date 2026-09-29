@@ -16,6 +16,8 @@
 </head>
 <body>
 
+<main id="main">
+
 <!-- ============ LOGIN ============ -->
 <section id="login-screen" class="screen center-screen active" aria-labelledby="login-title">
     <div class="wrap-narrow">
@@ -141,7 +143,7 @@
         <div class="activity-bar">
             <div class="activity-name">
                 <span class="pic" id="activity-icon" aria-hidden="true">🎨</span>
-                <span><span id="activity-title">Atividade</span><small id="activity-level">Nível 1</small></span>
+                <div><h1 id="activity-title">Atividade</h1><small id="activity-level">Nível 1</small></div>
             </div>
             <div class="activity-right">
                 <div id="activity-timer-box" class="activity-timer hidden">
@@ -168,7 +170,7 @@
     <div class="card finish-card">
         <img src="/img/mascot/fox_happy.png" alt="Raposa feliz">
         <div class="check-big" aria-hidden="true">✅</div>
-        <h2 id="finish-title">Terminou!</h2>
+        <h1 id="finish-title">Terminou!</h1>
         <p id="finish-message"></p>
         <div id="finish-reward" class="finish-reward hidden"></div>
         <div id="finish-stars" class="stars"></div>
@@ -246,7 +248,7 @@
         </div>
         <div id="mood-said" class="mood-said hidden" aria-live="assertive">
             <div id="mood-said-pic" class="pic" aria-hidden="true"></div>
-            <p id="mood-said-text"></p>
+            <h1 id="mood-said-text"></h1>
             <p id="mood-said-note" class="shared-note"></p>
             <div class="mood-actions">
                 <button class="btn btn-success" id="mood-go"><span class="ico" aria-hidden="true">▶️</span> Continuar</button>
@@ -280,8 +282,7 @@
             <div>
                 <h1 id="panel-title">Painel dos Adultos</h1>
                 <div class="panel-child">
-                    <label for="panel-profile" class="sr-only">Criança</label>
-                    <select id="panel-profile"></select>
+                    <div id="panel-profile" class="kid-row" role="group" aria-label="Criança"></div>
                     <span id="panel-shared" class="shared-note"></span>
                 </div>
             </div>
@@ -318,10 +319,10 @@
             </div>
             <div class="stats" id="stats"></div>
             <div class="charts">
-                <div class="card"><h3>Acerto por área de habilidade</h3><div class="chart-box"><canvas id="chart-areas" aria-label="Gráfico de acerto por área"></canvas></div></div>
-                <div class="card"><h3>Evolução no período</h3><div class="chart-box"><canvas id="chart-timeline" aria-label="Gráfico de evolução"></canvas></div></div>
-                <div class="card"><h3>Acerto por atividade</h3><div class="chart-box"><canvas id="chart-activities" aria-label="Gráfico por atividade"></canvas></div></div>
-                <div class="card"><h3>Como a criança se sentiu</h3><div class="chart-box"><canvas id="chart-moods" aria-label="Gráfico das emoções por dia"></canvas></div>
+                <div class="card"><h2>Acerto por área de habilidade</h2><div class="chart-box"><canvas id="chart-areas" aria-label="Gráfico de acerto por área"></canvas></div></div>
+                <div class="card"><h2>Evolução no período</h2><div class="chart-box"><canvas id="chart-timeline" aria-label="Gráfico de evolução"></canvas></div></div>
+                <div class="card"><h2>Acerto por atividade</h2><div class="chart-box"><canvas id="chart-activities" aria-label="Gráfico por atividade"></canvas></div></div>
+                <div class="card"><h2>Como a criança se sentiu</h2><div class="chart-box"><canvas id="chart-moods" aria-label="Gráfico das emoções por dia"></canvas></div>
                     <p id="moods-empty" class="shared-note hidden">Nenhuma emoção registrada no período. Ela aparece quando a criança responde "Como você está se sentindo?".</p></div>
             </div>
         </div>
@@ -341,12 +342,12 @@
         <!-- Diário -->
         <div class="tab-panel" id="tab-diary" role="tabpanel">
             <div class="card" style="margin-bottom:16px">
-                <h3><span aria-hidden="true">🙂</span> Como a criança se sentiu (últimos 7 dias)</h3>
+                <h2><span aria-hidden="true">🙂</span> Como a criança se sentiu (últimos 7 dias)</h2>
                 <div id="moods-summary" class="chip-row"></div>
                 <div id="moods-list" class="list" style="margin-top:12px"></div>
             </div>
             <div class="card" style="margin-bottom:16px">
-                <h3><span aria-hidden="true">💬</span> Pedidos da criança (últimos 7 dias)</h3>
+                <h2><span aria-hidden="true">💬</span> Pedidos da criança (últimos 7 dias)</h2>
                 <div id="requests-summary" class="chip-row"></div>
                 <div id="requests-list" class="list" style="margin-top:12px"></div>
             </div>
@@ -386,7 +387,7 @@
             <p class="shared-note" style="margin-bottom:12px">Escolha o que aparece para a criança (poucas opções ajudam), o nível, quantas etapas cada atividade tem e, se quiser, um timer visual. A ⭐ destaca a atividade no menu.</p>
             <div id="plan-list" class="list"></div>
             <div class="card" style="margin-top:16px">
-                <h3>Critério de domínio</h3>
+                <h2>Critério de domínio</h2>
                 <p class="shared-note" style="margin-bottom:12px">Quando a criança atinge este acerto nas sessões seguidas, o Lumina sugere subir de nível.</p>
                 <form id="mastery-form" class="grid-2" style="align-items:end">
                     <div class="field"><label for="mastery-threshold">Acerto mínimo (%)</label><input id="mastery-threshold" type="number" min="50" max="100"></div>
@@ -399,7 +400,7 @@
         <!-- Rotina -->
         <div class="tab-panel" id="tab-routine" role="tabpanel">
             <div class="card" style="margin-bottom:16px">
-                <h3>Adicionar etapa da rotina</h3>
+                <h2>Adicionar etapa da rotina</h2>
                 <form id="routine-form">
                     <div class="field"><span class="label">Pictograma</span><div id="routine-emoji" class="emoji-grid" role="group" aria-label="Pictograma"></div></div>
                     <div class="grid-3" style="align-items:end">
@@ -418,11 +419,11 @@
         <div class="tab-panel" id="tab-profile" role="tabpanel">
             <div class="grid-2">
                 <div class="card">
-                    <h3>Perfil da criança</h3>
+                    <h2>Perfil da criança</h2>
                     <form id="profile-form"></form>
                 </div>
                 <div class="card" id="access-card">
-                    <h3>Profissionais com acesso</h3>
+                    <h2>Profissionais com acesso</h2>
                     <p class="shared-note" style="margin-bottom:12px">O profissional precisa ter uma conta do tipo Profissional e aceitar o convite. Você pode revogar a qualquer momento.</p>
                     <form id="access-form" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
                         <label for="access-who" class="sr-only">Usuário ou email do profissional</label>
@@ -442,7 +443,7 @@
         <div class="tab-panel" id="tab-settings" role="tabpanel">
             <div class="grid-2">
                 <div class="card">
-                    <h3>Conforto sensorial da criança</h3>
+                    <h2>Conforto sensorial da criança</h2>
                     <div class="switch-row"><label for="set-sound">🔔 Sons de acerto e erro</label><input type="checkbox" id="set-sound"></div>
                     <div class="switch-row"><label for="set-voice">🗣️ Falar os elogios em voz alta</label><input type="checkbox" id="set-voice"></div>
                     <div class="switch-row"><label for="set-low">🌙 Modo Baixo Estímulo (sem movimento, menos cor, sons baixos)</label><input type="checkbox" id="set-low"></div>
@@ -458,7 +459,7 @@
                     </div>
                 </div>
                 <div class="card">
-                    <h3><span aria-hidden="true">⭐</span> Quadro de fichas</h3>
+                    <h2><span aria-hidden="true">⭐</span> Quadro de fichas</h2>
                     <div class="switch-row"><label for="set-tokens">Antes de cada atividade, a criança escolhe um prêmio e ganha uma ⭐ por etapa</label><input type="checkbox" id="set-tokens"></div>
                     <p class="shared-note" style="margin:10px 0 8px">Prêmios que aparecem para escolher (toque para ligar ou desligar):</p>
                     <div id="reward-options" class="chip-row"></div>
@@ -473,22 +474,22 @@
                     </form>
                 </div>
                 <div class="card">
-                    <h3><span aria-hidden="true">🙂</span> Como estou me sentindo?</h3>
+                    <h2><span aria-hidden="true">🙂</span> Como estou me sentindo?</h2>
                     <div class="switch-row"><label for="set-mood">Ao entrar na área da criança, perguntar como ela está se sentindo</label><input type="checkbox" id="set-mood"></div>
                     <p class="shared-note" style="margin-top:10px">A criança toca num rosto (feliz, calmo, triste, bravo, com medo ou cansado). A escolha aparece no Diário, no gráfico do Progresso e no relatório PDF. Ela também pode responder quando quiser, pelo botão na tela inicial.</p>
                 </div>
                 <div class="card">
-                    <h3><span aria-hidden="true">💬</span> Prancha de pedidos</h3>
+                    <h2><span aria-hidden="true">💬</span> Prancha de pedidos</h2>
                     <div class="switch-row"><label for="set-requests">Mostrar o botão "Pedir" na área da criança</label><input type="checkbox" id="set-requests"></div>
                     <p class="shared-note" style="margin:10px 0 8px">Pedidos disponíveis (toque para ligar ou desligar). Cada pedido é falado em voz alta e aparece no Diário.</p>
                     <div id="request-options" class="chip-row"></div>
                 </div>
                 <div class="card" id="invites-card">
-                    <h3>Convites recebidos</h3>
+                    <h2>Convites recebidos</h2>
                     <div id="invites-list" class="list"></div>
                 </div>
                 <div class="card">
-                    <h3>Conta e privacidade</h3>
+                    <h2>Conta e privacidade</h2>
                     <p class="shared-note" id="account-info" style="margin-bottom:12px"></p>
                     <button class="btn btn-danger" id="delete-account-btn"><span aria-hidden="true">🗑️</span> Excluir minha conta e todos os dados</button>
                     <p class="shared-note" id="picto-credit" style="margin-top:14px"></p>
@@ -497,6 +498,8 @@
         </div>
     </div>
 </section>
+
+</main>
 
 <!-- ============ MODAL: SENHA DO ADULTO ============ -->
 <div id="password-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="password-title">

@@ -37,6 +37,7 @@ class Profile(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String(100), nullable=False)
     avatar = Column(String(10), default="😊")
+    photo = Column(Text, nullable=True)  # foto opcional (JPEG pequeno em data URL) para a criança se reconhecer
     birth_date = Column(Date, nullable=True)
     # Sem diagnóstico ou laudo: só o que serve à personalização (minimização de dados, LGPD).
     interests = Column(Text, nullable=True)       # ex.: "dinossauros, trens, música"
