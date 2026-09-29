@@ -11,12 +11,7 @@ WORKDIR /app
 # Copiar os requerimentos do backend primeiro (layer cache otimizado)
 COPY backend/requirements.txt /app/backend/
 
-# Instalar dependencias Python (psycopg2 requer dependencias de build do sistema)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
+# Instalar dependencias Python (psycopg2-binary ja vem compilado, sem precisar de gcc)
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
 # Copiar todo o codigo do projeto (Backend e Frontend) para o container

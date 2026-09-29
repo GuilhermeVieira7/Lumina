@@ -5,7 +5,7 @@
 # três números principais e o acerto médio por dia para o gráfico.
 
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -22,6 +22,15 @@ from routers.moods import _local_date
 router = APIRouter(prefix="/api/summary", tags=["Resumo"])
 
 MAX_DAYS = 180  # "Tudo": o gráfico mostra no máximo os últimos 6 meses
+
+
+def _utc(moment: datetime) -> datetime:
+    """SQLite devolve datas sem fuso e o PostgreSQL com fuso: compara tudo em UTC sem fuso."""
+    return moment.astimezone(timezone.utc).replace(tzinfo=None) if moment.tzinfo else moment
+
+
+def _in_period(moment, since) -> bool:
+    return moment is not None and (since is None or _utc(moment) >= since)
 
 
 def _accuracy(sessions) -> Optional[float]:
@@ -81,7 +90,7 @@ def get_summary(
     since = now - timedelta(days=period) if period else None
 
     query = db.query(Session).filter(Session.profile_id == profile_id, Session.is_practice == False)  # noqa: E712
-    sessions = [s for s in query.all() if s.created_at and (since is None or s.created_at >= since)]
+    sessions = [s for s in query.all() if _in_period(s.created_at, since)]
     previous = []
     if period:
         before = now - timedelta(days=2 * period)
@@ -106,11 +115,11 @@ def get_summary(
         support = None
 
     moods = [m for m in db.query(MoodCheck).filter(MoodCheck.profile_id == profile_id).all()
-             if m.created_at and (since is None or m.created_at >= since)]
+             if _in_period(m.created_at, since)]
     hard_days = len({_local_date(m.created_at, tz) for m in moods if MOODS_BY_KEY.get(m.mood, {}).get("hard")})
     common = Counter(m.mood for m in moods).most_common(1)
     requests = sum(1 for r in db.query(ChildRequest).filter(ChildRequest.profile_id == profile_id).all()
-                   if r.created_at and (since is None or r.created_at >= since))
+                   if _in_period(r.created_at, since))
 
     # Acerto médio por dia (para o gráfico de evolução)
     per_day = defaultdict(list)

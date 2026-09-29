@@ -32,6 +32,17 @@ Aguarde a mensagem: `Uvicorn running on http://127.0.0.1:8000`
 | Responsável (dono do perfil "Aluno Demo") | `admin` | `admin1234` |
 | Profissional com acesso autorizado ao "Aluno Demo" | `terapeuta` | `terapeuta1234` |
 
+### Opção com Docker (PostgreSQL)
+
+Com o Docker Desktop aberto, na pasta do projeto:
+
+```bash
+cp .env.example .env        # no Windows: copy .env.example .env
+docker compose up -d --build
+```
+
+Acesse **http://localhost** (porta 80). O app espera o banco ficar pronto antes de subir, e os dados ficam guardados no volume `pgdata`. Para parar: `docker compose down` (os dados continuam); para apagar tudo e recomeçar: `docker compose down -v`. Se a porta 80 ou 5432 já estiver em uso no computador, troque o número da esquerda em `ports` no `docker-compose.yml` (ex.: `"8080:80"`).
+
 ---
 
 ## 🧠 O Que Avaliar
@@ -63,7 +74,7 @@ Testes automatizados: `pip install -r requirements-dev.txt` e `pytest` na raiz d
 PROJETO TCC/
 ├── INICIAR.bat              ← Inicialização rápida (duplo clique)
 ├── INSTRUÇÕES_AVALIAÇÃO.md  ← Guia para avaliação acadêmica
-├── .env                     ← Configurações do sistema
+├── .env.example             ← Modelo do .env (senhas do banco e chave dos logins)
 ├── Dockerfile               ← Deploy em container (produção)
 ├── docker-compose.yml       ← Orquestração Docker (Azure)
 │

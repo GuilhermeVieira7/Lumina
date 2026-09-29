@@ -68,3 +68,16 @@ def test_summary_is_private(client):
     other, _, _ = _register(client)
     resp = client.get(f"/api/summary/{profile['id']}", headers=_headers(other))
     assert resp.status_code == 404
+
+
+def test_period_filter_accepts_dates_with_time_zone():
+    """No PostgreSQL as datas vêm com fuso; no SQLite, sem. As duas precisam funcionar."""
+    from datetime import timezone
+
+    from routers.summary import _in_period
+
+    since = datetime.utcnow() - timedelta(days=7)
+    assert _in_period(datetime.now(timezone.utc), since)
+    assert _in_period(datetime.utcnow(), since)
+    assert not _in_period(datetime.now(timezone.utc) - timedelta(days=8), since)
+    assert not _in_period(None, None)
