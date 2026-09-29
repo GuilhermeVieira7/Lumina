@@ -62,13 +62,26 @@ app = FastAPI(
 )
 
 # ---- CORS ----
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# O frontend é servido por este mesmo servidor, então não precisa liberar outros
+# sites. Para um frontend em outro endereço, liste-o em CORS_ORIGINS no .env.
+_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+if _origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_origins,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+
+# ---- Cabeçalhos de segurança ----
+@app.middleware("http")
+async def security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    return response
 
 # ---- Registrar Routers ----
 app.include_router(auth.router)

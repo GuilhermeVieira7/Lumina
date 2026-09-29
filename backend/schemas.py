@@ -13,13 +13,13 @@ from datetime import datetime, date
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: Optional[str] = None
-    password: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=6, max_length=128)
     role: str = "parent"  # parent (responsável) ou therapist (profissional)
     consent: bool = False  # aceite do termo de consentimento (LGPD)
 
 class UserLogin(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., max_length=50)
+    password: str = Field(..., max_length=128)
 
 class UserResponse(BaseModel):
     id: int
@@ -33,7 +33,7 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 class PasswordCheck(BaseModel):
-    password: str
+    password: str = Field(..., max_length=128)
 
 class TokenResponse(BaseModel):
     access_token: str
