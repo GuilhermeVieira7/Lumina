@@ -10,3 +10,5 @@ dist/
 build/
 .vscode/
 node_modules/
+.coverage
+htmlcov/
