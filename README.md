@@ -38,12 +38,15 @@ Aguarde a mensagem: `Uvicorn running on http://127.0.0.1:8000`
 
 1. **Área da criança visual (TEACCH)** — cartões grandes com pictogramas coloridos por área de habilidade, quadro "Agora / Depois", uma instrução por tela, trilha de etapas com bandeira de chegada e tela "Terminou!".
 2. **Agenda visual de rotina** — o adulto monta a rotina com pictogramas; a criança marca cada etapa como feita.
-3. **Recomendação explicável** — `backend/ai_engine.py`: regras de domínio e de dificuldade (ABA) e pontuação por interesses, metas, desempenho e variedade. Cada sugestão mostra os motivos e só vale depois que um adulto aceita, ajusta ou descarta.
-4. **Painel dos Adultos protegido por senha** — progresso por área e período, sessões com nível de ajuda, diário de observações, metas, plano de atividades, rotina, perfil e ajustes sensoriais.
-5. **Acompanhamento compartilhado** — o responsável convida um profissional, que aceita o convite; o acesso pode ser revogado a qualquer momento.
-6. **LGPD** — consentimento no cadastro, perfil sem diagnóstico, exclusão da criança ou da conta com todos os dados.
-7. **Relatório em PDF** — Painel → Progresso → "Relatório PDF".
-8. **API REST documentada** — http://127.0.0.1:8000/api/docs (Swagger interativo).
+3. **Timer visual** — disco colorido que diminui com o tempo (estilo Time Timer). Aparece nas etapas da rotina que têm duração, no botão "Timer" da criança e nas atividades em que o adulto define um tempo (Painel → Atividades).
+4. **Quadro de fichas** — antes da atividade, a criança escolhe o prêmio; cada etapa vale uma ⭐ e a trilha termina no prêmio. O adulto escolhe os prêmios em Painel → Ajustes.
+5. **Prancha de pedidos** — botão "Pedir" sempre visível na área da criança (pausa, ajuda, água, banheiro, sim, não...). O pedido é falado em voz alta e aparece no Diário e no relatório.
+6. **Recomendação explicável** — `backend/ai_engine.py`: regras de domínio e de dificuldade (ABA) e pontuação por interesses, metas, desempenho e variedade. Cada sugestão mostra os motivos e só vale depois que um adulto aceita, ajusta ou descarta.
+7. **Painel dos Adultos protegido por senha** — progresso por área e período, sessões com nível de ajuda, diário de observações, metas, plano de atividades, rotina, perfil e ajustes sensoriais.
+8. **Acompanhamento compartilhado** — o responsável convida um profissional, que aceita o convite; o acesso pode ser revogado a qualquer momento.
+9. **LGPD** — consentimento no cadastro, perfil sem diagnóstico, exclusão da criança ou da conta com todos os dados.
+10. **Relatório em PDF** — Painel → Progresso → "Relatório PDF".
+11. **API REST documentada** — http://127.0.0.1:8000/api/docs (Swagger interativo).
 
 Testes automatizados: `pip install -r requirements-dev.txt` e `pytest` na raiz do projeto.
 
@@ -73,13 +76,29 @@ PROJETO TCC/
 │   ├── index.html           ← Aplicação principal
 │   ├── css/style.css        ← Estilos
 │   ├── img/mascot/          ← Raposa Lumi (mascote)
+│   ├── img/pictos/          ← Pictogramas ARASAAC (gerados pelo script abaixo)
 │   └── js/                  ← Lógica do cliente (Chart.js incluído em js/vendor)
+│
+├── scripts/
+│   └── baixar_pictogramas.py ← Baixa os pictogramas ARASAAC usados na interface
 │
 └── docs/                    ← Documentação técnica
     ├── schema.sql           ← Schema PostgreSQL (deploy)
     ├── azure_architecture.md ← Guia de deploy na Azure
     └── export_schema.py     ← Script para gerar schema.sql
 ```
+
+---
+
+## 🖼️ Pictogramas
+
+As figuras da área da criança usam pictogramas do [ARASAAC](https://arasaac.org) quando eles estão em `frontend/img/pictos/`; o que ainda não foi baixado aparece como emoji. Para baixar ou atualizar:
+
+```bash
+python scripts/baixar_pictogramas.py
+```
+
+Pictogramas: Sergio Palao. Origem: ARASAAC (https://arasaac.org). Licença: CC BY-NC-SA. Propriedade: Governo de Aragão (Espanha).
 
 ---
 

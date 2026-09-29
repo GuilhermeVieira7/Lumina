@@ -30,6 +30,7 @@
     --radius: 18px;
     --radius-sm: 12px;
     --touch: 64px;
+    --timer: #e8826f;
     --font: 'Nunito', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
@@ -426,6 +427,114 @@ button { cursor: pointer; }
 .toast.success { background: var(--success); color: #fff; }
 .toast.error { background: var(--danger); color: #fff; }
 
+/* ---- Pictogramas ARASAAC ---- */
+.picto {
+    width: 1.3em; height: 1.3em; object-fit: contain; vertical-align: middle;
+    background: #fff; border-radius: .18em; padding: .04em;
+}
+.option-btn.picto-option .picto { width: 110px; height: 110px; border-radius: 14px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
+
+/* ---- Timer visual ---- */
+.timer-face { fill: var(--card); stroke: var(--border); stroke-width: 2; }
+.timer-left-fill { fill: var(--timer); }
+.timer-tick { stroke: var(--text-soft); stroke-width: 1.5; stroke-linecap: round; }
+.timer-knob { fill: var(--text); }
+.timer-disc { width: min(300px, 72vw); aspect-ratio: 1; margin: 0 auto; }
+.timer-disc svg, .mini-disc svg { width: 100%; height: 100%; display: block; }
+.timer-disc.small { width: 58px; }
+.mini-disc { width: 44px; height: 44px; flex-shrink: 0; display: inline-block; }
+.activity-right { display: flex; align-items: center; gap: 12px; }
+.activity-timer { display: flex; align-items: center; }
+
+.timer-wrap { max-width: 760px; }
+.timer-what {
+    display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 18px;
+    font-size: 1.5rem; font-weight: 800;
+}
+.timer-what .pic { font-size: 3.4rem; line-height: 1; }
+.timer-picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 14px; }
+.timer-choice {
+    min-height: 130px; border-radius: var(--radius); border: 3px solid var(--border); background: var(--card);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: var(--shadow);
+}
+.timer-choice .mini-disc { width: 56px; height: 56px; }
+.timer-choice b { font-size: 1.8rem; line-height: 1; }
+.timer-choice small { color: var(--text-soft); font-weight: 700; }
+.timer-left { text-align: center; font-size: 1.5rem; font-weight: 800; margin: 14px 0 6px; }
+.timer-done { display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 1.5rem; margin-bottom: 8px; }
+.timer-done img { width: 90px; height: 90px; object-fit: contain; }
+.timer-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 14px; }
+.timer-start {
+    grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 12px;
+    min-height: var(--touch); padding: 10px 18px; border-radius: var(--radius-sm);
+    border: 2px dashed var(--timer); background: var(--card); font-weight: 800; font-size: 1.1rem; text-align: left;
+}
+.timer-start small { display: block; color: var(--text-soft); font-weight: 700; font-size: .9rem; }
+.routine-timer { margin-bottom: 16px; }
+.routine-timer .timer-start { width: 100%; }
+
+/* ---- Quadro de fichas ---- */
+.reward-activity { display: flex; align-items: center; gap: 10px; font-size: 1.3rem; font-weight: 800; }
+.reward-activity .pic { font-size: 2.2rem; line-height: 1; }
+.reward-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; max-width: 900px; margin: 0 auto; }
+.reward-card {
+    min-height: 160px; border-radius: var(--radius); border: 3px solid var(--border); background: var(--card); box-shadow: var(--shadow);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 1.2rem;
+}
+.reward-card .pic { font-size: 4rem; line-height: 1; }
+.reward-card:hover { border-color: #e7b62f; }
+.steps .dot.token { font-size: 1.3rem; }
+.steps .dot.token.done { background: #fff5d6; border-color: #e7b62f; color: inherit; }
+[data-theme="dark"] .steps .dot.token.done { background: #3a3422; }
+.steps .dot.prize { width: 60px; height: 60px; font-size: 2rem; border-color: #e7b62f; border-style: solid; background: #fff9e8; }
+[data-theme="dark"] .steps .dot.prize { background: #3a3422; }
+.finish-reward {
+    display: flex; align-items: center; justify-content: center; gap: 14px; margin: 0 auto 16px; padding: 12px 20px;
+    background: #fff5d6; border: 3px solid #f3c64f; border-radius: var(--radius); font-size: 1.5rem; font-weight: 800; max-width: 380px;
+}
+.finish-reward .pic { font-size: 3.4rem; line-height: 1; }
+.finish-reward small { display: block; font-size: .9rem; color: #7a5a0d; }
+[data-theme="dark"] .finish-reward { background: #3a3422; }
+[data-theme="dark"] .finish-reward small { color: #fde9c8; }
+
+/* ---- Prancha de pedidos ---- */
+.ask-fab {
+    position: fixed; right: 18px; bottom: 18px; z-index: 40;
+    min-height: 68px; padding: 10px 22px; border-radius: 999px; border: 3px solid #fff;
+    background: var(--primary); color: #fff; font-weight: 800; font-size: 1.2rem;
+    display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-lg);
+}
+.ask-fab .ico { font-size: 1.8rem; line-height: 1; }
+body.child-mode .screen { padding-bottom: 110px; }
+.ask-modal .card { max-width: 820px; }
+.ask-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.ask-head h2 { margin: 0; }
+.ask-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+.ask-card {
+    min-height: 130px; border-radius: var(--radius); border: 3px solid var(--border); background: var(--bg-soft);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-weight: 800; font-size: 1.1rem;
+}
+.ask-card .pic { font-size: 3.2rem; line-height: 1; }
+.ask-card:hover { border-color: var(--primary); }
+.ask-said { text-align: center; padding: 10px 0; }
+.ask-said .pic { font-size: 7rem; line-height: 1.1; }
+.ask-said #ask-said-text { font-size: 2rem; font-weight: 800; margin: 10px 0 4px; }
+.ask-said .shared-note { margin-bottom: 18px; font-size: 1rem; }
+
+/* ---- Chips (ajustes e resumo de pedidos) ---- */
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+    display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 6px 12px;
+    border-radius: 999px; border: 2px solid var(--border); background: var(--bg-soft); font-weight: 700;
+}
+.chip .pic { font-size: 1.4rem; line-height: 1; }
+.chip.toggle[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+.chip.toggle[aria-pressed="false"] { opacity: .65; }
+.custom-reward { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.custom-reward .emoji-grid { margin-top: 8px; }
+.emoji-grid .picto { width: 36px; height: 36px; }
+
 /* ---- Responsivo ---- */
 @media (max-width: 640px) {
     .tabs { flex-wrap: nowrap; }
@@ -439,6 +548,18 @@ button { cursor: pointer; }
     .option-btn { min-height: 110px; }
     .question-text { font-size: 1.35rem; }
     .role-picker, .pause-choices { grid-template-columns: 1fr; }
+    .reward-grid { grid-template-columns: repeat(2, 1fr); }
+    .ask-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .ask-card { min-height: 96px; font-size: .95rem; padding: 6px 2px; }
+    .ask-card .pic { font-size: 2.4rem; }
+    .ask-modal .card { padding: 16px; }
+    .timer-picker { grid-template-columns: repeat(3, 1fr); }
+    .activity-name { font-size: 1.2rem; }
+    .activity-name .pic { font-size: 2rem; }
+    .ask-fab { right: 12px; bottom: 12px; min-height: 60px; padding: 8px 18px; }
+    .ask-said .pic { font-size: 5rem; }
+    .ask-said #ask-said-text { font-size: 1.5rem; }
+    .option-btn.picto-option .picto { width: 80px; height: 80px; }
 }
 
 /* ---- Modo Baixo Estímulo: sem movimento, menos cor ---- */
@@ -447,6 +568,8 @@ body.low-stimulus *, body.low-stimulus *::before, body.low-stimulus *::after {
 }
 body.low-stimulus .tile, body.low-stimulus .option-btn, body.low-stimulus .card { box-shadow: none; }
 body.low-stimulus .tile.recommended { box-shadow: none; }
+body.low-stimulus { --timer: #9fb2c8; }
+body.low-stimulus .ask-fab { box-shadow: none; }
 body.low-stimulus .tile.area-cognicao, body.low-stimulus .tile.area-comunicacao,
 body.low-stimulus .tile.area-socializacao, body.low-stimulus .tile.area-autonomia { border-top-color: var(--border); }
 @media (prefers-reduced-motion: reduce) {

@@ -19,15 +19,16 @@ from schemas import RoutineItemCreate, RoutineItemResponse, RoutineItemUpdate
 router = APIRouter(prefix="/api/routine", tags=["Rotina Visual"])
 
 ROUTINE_TEMPLATE = [
-    ("🌅", "Acordar", "07:00"),
-    ("🪥", "Escovar os dentes", "07:10"),
-    ("🥣", "Café da manhã", "07:30"),
-    ("🏫", "Escola", "08:00"),
-    ("🍽️", "Almoço", "12:00"),
-    ("⭐", "Atividades no Lumina", "15:00"),
-    ("🧸", "Brincar", "16:00"),
-    ("🛁", "Banho", "18:30"),
-    ("🌙", "Dormir", "20:30"),
+    # (figura, nome, horário, minutos no timer visual)
+    ("🌅", "Acordar", "07:00", None),
+    ("🪥", "Escovar os dentes", "07:10", 2),
+    ("🥣", "Café da manhã", "07:30", 20),
+    ("🏫", "Escola", "08:00", None),
+    ("🍽️", "Almoço", "12:00", 30),
+    ("⭐", "Atividades no Lumina", "15:00", 10),
+    ("🧸", "Brincar", "16:00", 30),
+    ("🛁", "Banho", "18:30", 15),
+    ("🌙", "Dormir", "20:30", None),
 ]
 
 
@@ -39,6 +40,7 @@ def _to_response(item: RoutineItem) -> RoutineItemResponse:
         icon=item.icon,
         label=item.label,
         time=item.time,
+        duration=item.duration or None,
         done_today=item.done_on == date.today(),
     )
 
@@ -78,6 +80,7 @@ def create_item(
     item = RoutineItem(
         profile_id=data.profile_id, position=count,
         icon=data.icon or "⭐", label=data.label.strip(), time=data.time or None,
+        duration=data.duration,
     )
     db.add(item)
     db.commit()
@@ -95,8 +98,10 @@ def create_from_template(
     get_profile_for(db, profile_id, current_user)
     if db.query(RoutineItem).filter(RoutineItem.profile_id == profile_id).count():
         raise HTTPException(status_code=400, detail="A rotina já tem itens")
-    for position, (icon, label, time) in enumerate(ROUTINE_TEMPLATE):
-        db.add(RoutineItem(profile_id=profile_id, position=position, icon=icon, label=label, time=time))
+    for position, (icon, label, time, duration) in enumerate(ROUTINE_TEMPLATE):
+        db.add(RoutineItem(
+            profile_id=profile_id, position=position, icon=icon, label=label, time=time, duration=duration,
+        ))
     db.commit()
     return list_routine(profile_id, current_user, db)
 
@@ -115,6 +120,8 @@ def update_item(
         item.label = data.label.strip()
     if data.time is not None:
         item.time = data.time or None
+    if data.duration is not None:
+        item.duration = data.duration or None
     if data.position is not None:
         siblings = (
             db.query(RoutineItem)

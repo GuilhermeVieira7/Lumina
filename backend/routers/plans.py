@@ -2,7 +2,8 @@
 # ROUTER: Plano de Atividades (personalização pelos adultos)
 # ==========================================
 # O adulto escolhe quais atividades aparecem para a criança, em que nível,
-# com quantas etapas e qual fica destacada como recomendada (RF06, RNF10).
+# com quantas etapas, quanto tempo no timer visual e qual fica destacada
+# como recomendada (RF06, RNF10).
 
 from typing import List
 
@@ -31,6 +32,7 @@ def get_or_create_plan(db: DBSession, profile_id: int, activity_type: str) -> Ac
             enabled=activity_type in DEFAULT_ENABLED,
             recommended=False,
             question_count=5,
+            time_limit=0,
         )
         db.add(plan)
         db.flush()
@@ -49,6 +51,7 @@ def _to_response(activity_type: str, plan: ActivityPlan = None) -> PlanResponse:
         enabled=plan.enabled if plan else activity_type in DEFAULT_ENABLED,
         recommended=plan.recommended if plan else False,
         question_count=plan.question_count if plan else 5,
+        time_limit=(plan.time_limit or 0) if plan else 0,
     )
 
 
@@ -72,7 +75,7 @@ def update_plan(
     current_user: User = Depends(get_current_user),
     db: DBSession = Depends(get_db),
 ):
-    """Ajustar nível, visibilidade, etapas ou destaque de uma atividade."""
+    """Ajustar nível, visibilidade, etapas, timer ou destaque de uma atividade."""
     get_profile_for(db, profile_id, current_user)
     if activity_type not in ACTIVITY_BANK:
         raise HTTPException(status_code=404, detail="Atividade não encontrada")
@@ -90,6 +93,8 @@ def update_plan(
             plan.enabled = True
     if data.question_count is not None:
         plan.question_count = data.question_count
+    if data.time_limit is not None:
+        plan.time_limit = data.time_limit
     db.commit()
     db.refresh(plan)
     return _to_response(activity_type, plan)

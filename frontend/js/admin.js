@@ -7,6 +7,8 @@ const Admin = {
     days: 30,
     charts: {},
     routineEmoji: '⭐',
+    rewardEmoji: '🧸',
+    DURATIONS: [1, 2, 3, 5, 10, 15, 20, 30, 45, 60],
     wired: false,
 
     get pid() { return App.profile && App.profile.id; },
@@ -47,15 +49,28 @@ const Admin = {
         document.getElementById('delete-account-btn').addEventListener('click', () => this.deleteAccount());
         document.querySelectorAll('[data-theme-choice]').forEach(b => b.addEventListener('click', () => ThemeController.apply(b.dataset.themeChoice)));
         document.getElementById('set-font').addEventListener('change', e => ThemeController.setLargeFont(e.target.checked));
-        [['set-sound', 'sound_enabled'], ['set-voice', 'voice_enabled'], ['set-low', 'low_stimulus']].forEach(([id, key]) =>
+        [['set-sound', 'sound_enabled'], ['set-voice', 'voice_enabled'], ['set-low', 'low_stimulus'],
+            ['set-tokens', 'token_board'], ['set-requests', 'request_board']].forEach(([id, key]) =>
             document.getElementById(id).addEventListener('change', e => this.saveSetting(key, e.target.checked)));
+        document.getElementById('reward-form').addEventListener('submit', e => this.addReward(e));
 
-        const grid = document.getElementById('routine-emoji');
-        grid.innerHTML = UI.ROUTINE_EMOJIS.map(e => `<button type="button" data-emoji="${e}" aria-pressed="${e === this.routineEmoji}">${e}</button>`).join('');
+        this._emojiPicker('routine-emoji', UI.ROUTINE_EMOJIS, 'routineEmoji');
+        this._emojiPicker('reward-emoji', UI.REWARD_EMOJIS, 'rewardEmoji');
+        document.getElementById('routine-duration').innerHTML = this._durationOptions(null);
+    },
+
+    _emojiPicker(id, emojis, field) {
+        const grid = document.getElementById(id);
+        grid.innerHTML = emojis.map(e => `<button type="button" data-emoji="${e}" aria-label="${e}" aria-pressed="${e === this[field]}">${UI.pic(e)}</button>`).join('');
         grid.querySelectorAll('[data-emoji]').forEach(b => b.addEventListener('click', () => {
-            this.routineEmoji = b.dataset.emoji;
+            this[field] = b.dataset.emoji;
             grid.querySelectorAll('[data-emoji]').forEach(x => x.setAttribute('aria-pressed', x === b));
         }));
+    },
+
+    _durationOptions(selected, noneLabel = 'Sem timer') {
+        return `<option value="0" ${!selected ? 'selected' : ''}>${noneLabel}</option>` +
+            this.DURATIONS.map(m => `<option value="${m}" ${m === selected ? 'selected' : ''}>⏳ ${m} min</option>`).join('');
     },
 
     _renderProfileSelect() {
@@ -101,9 +116,10 @@ const Admin = {
     async loadDashboard() {
         const q = this.days ? `&days=${this.days}` : '';
         try {
-            const [stats, sessions] = await Promise.all([
+            const [stats, sessions, requests] = await Promise.all([
                 API.get(`/sessions/stats?profile_id=${this.pid}${q}`),
                 API.get(`/sessions?profile_id=${this.pid}&limit=60&include_practice=false${q}`),
+                API.get(`/requests/${this.pid}?limit=1${q}`),
             ]);
             const stat = (pic, label, value) =>
                 `<div class="stat"><span class="pic" aria-hidden="true">${pic}</span><div><div class="label">${label}</div><div class="value">${value}</div></div></div>`;
@@ -112,7 +128,8 @@ const Admin = {
                 stat('🎯', 'Acerto de primeira', `${stats.accuracy}%`) +
                 stat('⏱️', 'Tempo de prática', UI.formatMinutes(stats.total_time)) +
                 stat('⭐', 'Estrelas', stats.total_stars) +
-                stat('🔁', 'Tentativas por questão', stats.avg_attempts);
+                stat('🔁', 'Tentativas por questão', stats.avg_attempts) +
+                stat('💬', 'Pedidos na prancha', requests.total);
             this._charts(stats, sessions.slice().reverse());
         } catch (err) { this._fail(err); }
     },
@@ -210,8 +227,10 @@ const Admin = {
             box.innerHTML = sessions.map(s => {
                 const a = App.activities[s.activity_type] || {};
                 return `<div class="row">
-                    <span class="pic" aria-hidden="true">${a.icon || '⭐'}</span>
+                    <span class="pic" aria-hidden="true">${UI.pic(a.icon || '⭐')}</span>
                     <div class="grow"><b>${UI.esc(a.name || s.activity_type)}</b> ${s.is_practice ? '<span class="pill info">treino</span>' : ''}
+                        ${s.reward ? `<span class="pill ok">🎁 ${UI.esc(s.reward)}</span>` : ''}
+                        ${s.timed_out ? '<span class="pill warn">⏳ tempo acabou</span>' : ''}
                         <div class="meta">${UI.formatDate(s.created_at)} · nível ${s.level} · ${s.accuracy}% de acerto · ${'⭐'.repeat(s.stars) || 'sem estrelas'}</div></div>
                     <label class="sr-only" for="help-${s.id}">Ajuda dada</label>
                     <select id="help-${s.id}" data-help="${s.id}">
@@ -302,6 +321,7 @@ const Admin = {
     // ---------- Diário ----------
     async loadDiary() {
         const box = document.getElementById('diary-list');
+        this.loadRequests();
         try {
             const notes = await API.get(`/notes/${this.pid}`);
             box.innerHTML = notes.length ? notes.map(n => `
@@ -315,6 +335,20 @@ const Admin = {
                 if (!confirm('Apagar esta observação?')) return;
                 try { await API.delete(`/notes/${b.dataset.delNote}`); this.loadDiary(); } catch (err) { this._fail(err); }
             }));
+        } catch (err) { this._fail(err); }
+    },
+
+    async loadRequests() {
+        try {
+            const data = await API.get(`/requests/${this.pid}?days=7&limit=10`);
+            document.getElementById('requests-summary').innerHTML = data.summary.map(r =>
+                `<span class="chip"><span class="pic" aria-hidden="true">${UI.pic(r.icon)}</span>${UI.esc(r.label)} <b>× ${r.count}</b></span>`).join('');
+            document.getElementById('requests-list').innerHTML = data.items.length ? data.items.map(r => `
+                <div class="row">
+                    <span class="pic" aria-hidden="true">${UI.pic(r.icon)}</span>
+                    <div class="grow"><b>${UI.esc(r.label)}</b>
+                        <div class="meta">${UI.formatDate(r.created_at)}${r.context ? ' · durante ' + UI.esc(r.context) : ''}</div></div>
+                </div>`).join('') : UI.empty('💬', 'Nenhum pedido nos últimos 7 dias. Os pedidos feitos no botão "Pedir" aparecem aqui.');
         } catch (err) { this._fail(err); }
     },
 
@@ -380,7 +414,7 @@ const Admin = {
             const plan = await API.get(`/plans/${this.pid}`);
             box.innerHTML = plan.map(a => `
                 <div class="row">
-                    <span class="pic" aria-hidden="true">${a.icon}</span>
+                    <span class="pic" aria-hidden="true">${UI.pic(a.icon)}</span>
                     <div class="grow"><b>${UI.esc(a.name)}</b><div class="meta">${UI.AREA_LABELS[a.area]}</div></div>
                     <label class="check" style="align-items:center"><input type="checkbox" data-plan="${a.activity_type}" data-field="enabled" ${a.enabled ? 'checked' : ''}> Aparece</label>
                     <label class="sr-only" for="lvl-${a.activity_type}">Nível</label>
@@ -390,6 +424,10 @@ const Admin = {
                     <label class="sr-only" for="qc-${a.activity_type}">Etapas</label>
                     <select id="qc-${a.activity_type}" data-plan="${a.activity_type}" data-field="question_count">
                         ${[2, 3, 4, 5].map(n => `<option value="${n}" ${n === a.question_count ? 'selected' : ''}>${n} etapas</option>`).join('')}
+                    </select>
+                    <label class="sr-only" for="tl-${a.activity_type}">Timer visual</label>
+                    <select id="tl-${a.activity_type}" data-plan="${a.activity_type}" data-field="time_limit">
+                        ${[0, 1, 2, 3, 5, 10, 15].map(n => `<option value="${n}" ${n === (a.time_limit || 0) ? 'selected' : ''}>${n ? `⏳ ${n} min` : 'Sem timer'}</option>`).join('')}
                     </select>
                     <button class="btn ${a.recommended ? '' : 'btn-outline'} btn-small" data-plan="${a.activity_type}" data-field="recommended"
                         aria-pressed="${a.recommended}" aria-label="Destacar ${UI.esc(a.name)}">⭐</button>
@@ -432,15 +470,23 @@ const Admin = {
             document.getElementById('routine-template').classList.toggle('hidden', items.length > 0);
             box.innerHTML = items.length ? items.map((i, idx) => `
                 <div class="row">
-                    <span class="pic" aria-hidden="true">${UI.esc(i.icon)}</span>
+                    <span class="pic" aria-hidden="true">${UI.pic(i.icon)}</span>
                     <div class="grow"><b>${UI.esc(i.label)}</b> ${i.done_today ? '<span class="pill ok">feito hoje</span>' : ''}
                         <div class="meta">${i.time ? UI.esc(i.time) : 'sem horário'}</div></div>
+                    <label class="sr-only" for="dur-${i.id}">Timer visual de ${UI.esc(i.label)}</label>
+                    <select id="dur-${i.id}" data-duration="${i.id}">${this._durationOptions(i.duration)}</select>
                     <button class="btn btn-outline btn-small" data-move="${i.id}" data-pos="${idx - 1}" ${idx === 0 ? 'disabled' : ''} aria-label="Subir">⬆️</button>
                     <button class="btn btn-outline btn-small" data-move="${i.id}" data-pos="${idx + 1}" ${idx === items.length - 1 ? 'disabled' : ''} aria-label="Descer">⬇️</button>
                     <button class="btn btn-outline btn-small" data-del-routine="${i.id}" aria-label="Remover">🗑️</button>
                 </div>`).join('') : UI.empty('📅', 'A rotina está vazia. Crie etapas ou use a rotina de exemplo.');
             box.querySelectorAll('[data-move]').forEach(b => b.addEventListener('click', async () => {
                 try { await API.put(`/routine/${b.dataset.move}`, { position: Number(b.dataset.pos) }); this.loadRoutine(); } catch (err) { this._fail(err); }
+            }));
+            box.querySelectorAll('[data-duration]').forEach(sel => sel.addEventListener('change', async () => {
+                try {
+                    await API.put(`/routine/${sel.dataset.duration}`, { duration: Number(sel.value) });
+                    UI.toast('Timer da etapa salvo', 'success');
+                } catch (err) { this._fail(err); }
             }));
             box.querySelectorAll('[data-del-routine]').forEach(b => b.addEventListener('click', async () => {
                 try { await API.delete(`/routine/${b.dataset.delRoutine}`); this.loadRoutine(); } catch (err) { this._fail(err); }
@@ -452,10 +498,15 @@ const Admin = {
         e.preventDefault();
         const label = document.getElementById('routine-label');
         const time = document.getElementById('routine-time');
+        const duration = document.getElementById('routine-duration');
         try {
-            await API.post('/routine', { profile_id: this.pid, icon: this.routineEmoji, label: label.value.trim(), time: time.value || null });
+            await API.post('/routine', {
+                profile_id: this.pid, icon: this.routineEmoji, label: label.value.trim(),
+                time: time.value || null, duration: Number(duration.value) || null,
+            });
             label.value = '';
             time.value = '';
+            duration.value = '0';
             this.loadRoutine();
         } catch (err) { this._fail(err); }
     },
@@ -541,7 +592,15 @@ const Admin = {
         document.getElementById('set-voice').checked = !!s.voice_enabled;
         document.getElementById('set-low').checked = !!s.low_stimulus;
         document.getElementById('set-font').checked = document.documentElement.classList.contains('font-large');
-        ['set-sound', 'set-voice', 'set-low'].forEach(id => { document.getElementById(id).disabled = !this.pid; });
+        document.getElementById('set-tokens').checked = s.token_board !== false;
+        document.getElementById('set-requests').checked = s.request_board !== false;
+        ['set-sound', 'set-voice', 'set-low', 'set-tokens', 'set-requests'].forEach(id => { document.getElementById(id).disabled = !this.pid; });
+        document.getElementById('reward-form').classList.toggle('hidden', !this.pid);
+        if (this.pid) {
+            this._renderRewardOptions();
+            this._renderRequestOptions();
+        }
+        document.getElementById('picto-credit').textContent = Pictos.count ? Pictos.attribution : '';
         ThemeController.apply(ThemeController.current);
         const roles = { parent: 'Responsável', admin: 'Responsável', therapist: 'Profissional' };
         document.getElementById('account-info').textContent =
@@ -569,6 +628,69 @@ const Admin = {
                 try { await API.post(`/access/${b.dataset.decline}/decline`); this.loadSettings(); } catch (err) { this._fail(err); }
             }));
         } catch (err) { this._fail(err); }
+    },
+
+    // ---------- Quadro de fichas ----------
+    _renderRewardOptions() {
+        const current = App.settings.rewards || [];
+        const isOn = r => current.some(c => c.icon === r.icon && c.label === r.label);
+        const custom = current.filter(c => !App.rewardOptions.some(o => o.icon === c.icon && o.label === c.label));
+        const all = [...App.rewardOptions, ...custom];
+        const box = document.getElementById('reward-options');
+        box.innerHTML = all.map((r, i) => `
+            <button type="button" class="chip toggle" data-reward-opt="${i}" aria-pressed="${isOn(r)}">
+                <span class="pic" aria-hidden="true">${UI.pic(r.icon)}</span>${UI.esc(r.label)}
+            </button>`).join('');
+        box.querySelectorAll('[data-reward-opt]').forEach(b => b.addEventListener('click', () => {
+            const r = all[Number(b.dataset.rewardOpt)];
+            const next = isOn(r)
+                ? current.filter(c => !(c.icon === r.icon && c.label === r.label))
+                : [...current, r];
+            if (!next.length) { UI.toast('Deixe pelo menos um prêmio ligado', 'error'); return; }
+            this._saveRewards(next);
+        }));
+    },
+
+    async _saveRewards(rewards) {
+        try {
+            App.settings = await API.put(`/settings/${this.pid}`, { rewards });
+            this._renderRewardOptions();
+        } catch (err) { this._fail(err); }
+    },
+
+    async addReward(e) {
+        e.preventDefault();
+        const input = document.getElementById('reward-label');
+        const label = input.value.trim();
+        if (!label) return;
+        const current = App.settings.rewards || [];
+        if (current.length >= 12) { UI.toast('Use no máximo 12 prêmios; desligue algum antes.', 'error'); return; }
+        if (current.some(r => r.icon === this.rewardEmoji && r.label.toLowerCase() === label.toLowerCase())) {
+            UI.toast('Esse prêmio já existe', 'error');
+            return;
+        }
+        await this._saveRewards([...current, { icon: this.rewardEmoji, label }]);
+        input.value = '';
+        UI.toast('Prêmio adicionado', 'success');
+    },
+
+    // ---------- Prancha de pedidos ----------
+    _renderRequestOptions() {
+        const current = App.settings.requests || [];
+        const box = document.getElementById('request-options');
+        box.innerHTML = App.requestOptions.map(o => `
+            <button type="button" class="chip toggle" data-request-opt="${o.key}" aria-pressed="${current.includes(o.key)}">
+                <span class="pic" aria-hidden="true">${UI.pic(o.icon)}</span>${UI.esc(o.label)}
+            </button>`).join('');
+        box.querySelectorAll('[data-request-opt]').forEach(b => b.addEventListener('click', async () => {
+            const key = b.dataset.requestOpt;
+            const next = current.includes(key) ? current.filter(k => k !== key) : [...current, key];
+            if (!next.length) { UI.toast('Deixe pelo menos um pedido ligado', 'error'); return; }
+            try {
+                App.settings = await API.put(`/settings/${this.pid}`, { requests: next });
+                this._renderRequestOptions();
+            } catch (err) { this._fail(err); }
+        }));
     },
 
     async saveSetting(key, value) {

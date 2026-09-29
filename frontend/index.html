@@ -143,7 +143,12 @@
                 <span class="pic" id="activity-icon" aria-hidden="true">🎨</span>
                 <span><span id="activity-title">Atividade</span><small id="activity-level">Nível 1</small></span>
             </div>
-            <button class="lock-btn" id="activity-pause"><span aria-hidden="true">⏸️</span> Pausa</button>
+            <div class="activity-right">
+                <div id="activity-timer-box" class="activity-timer hidden">
+                    <div id="activity-timer" class="timer-disc small" data-marks="false"></div>
+                </div>
+                <button class="lock-btn" id="activity-pause"><span aria-hidden="true">⏸️</span> Pausa</button>
+            </div>
         </div>
         <div id="activity-steps" class="steps" aria-hidden="true"></div>
         <p id="activity-steps-caption" class="steps-caption" aria-live="polite"></p>
@@ -165,6 +170,7 @@
         <div class="check-big" aria-hidden="true">✅</div>
         <h2 id="finish-title">Terminou!</h2>
         <p id="finish-message"></p>
+        <div id="finish-reward" class="finish-reward hidden"></div>
         <div id="finish-stars" class="stars"></div>
         <div id="finish-medal" class="new-medal hidden"></div>
         <button class="btn btn-success" id="finish-continue" style="min-width:220px">
@@ -181,6 +187,7 @@
             <button class="lock-btn" data-child-home><span aria-hidden="true">🏠</span> Início</button>
         </div>
         <p class="select-sub" style="text-align:left">Toque no cartão quando terminar.</p>
+        <div id="routine-timer" class="routine-timer"></div>
         <div id="routine-cards" class="routine-strip"></div>
     </div>
 </section>
@@ -197,6 +204,48 @@
         <div id="medals" class="medals"></div>
         <h2 class="section-label"><span aria-hidden="true">📚</span> Atividades</h2>
         <div id="skill-cards" class="skill-cards"></div>
+    </div>
+</section>
+
+<!-- ============ CRIANÇA: TIMER VISUAL ============ -->
+<section id="timer-screen" class="screen" aria-labelledby="timer-title">
+    <div class="wrap timer-wrap">
+        <div class="child-top">
+            <h1 id="timer-title" class="section-label" style="font-size:1.8rem"><span aria-hidden="true">⏳</span> Timer</h1>
+            <button class="lock-btn" data-child-home><span aria-hidden="true">🏠</span> Início</button>
+        </div>
+        <div id="timer-what" class="timer-what hidden"></div>
+        <p id="timer-pick-label" class="select-sub">Quanto tempo?</p>
+        <div id="timer-picker" class="timer-picker" role="group" aria-label="Escolher o tempo"></div>
+        <div id="timer-running" class="timer-running hidden">
+            <div id="timer-disc" class="timer-disc"></div>
+            <p id="timer-left" class="timer-left" aria-live="polite"></p>
+            <div id="timer-done" class="timer-done hidden">
+                <img src="/img/mascot/fox_happy.png" alt="">
+                <b><span aria-hidden="true">✋</span> Acabou o tempo!</b>
+            </div>
+            <div class="timer-actions">
+                <button class="btn btn-soft" id="timer-pause"></button>
+                <button class="btn btn-success hidden" id="timer-finish"><span class="ico" aria-hidden="true">✅</span> Pronto, terminei</button>
+                <button class="btn btn-outline" id="timer-again"><span class="ico" aria-hidden="true">🔁</span> Outro tempo</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ CRIANÇA: ESCOLHA DO PRÊMIO (quadro de fichas) ============ -->
+<section id="reward-screen" class="screen" aria-labelledby="reward-title">
+    <div class="wrap">
+        <div class="child-top">
+            <p id="reward-activity" class="reward-activity"></p>
+            <button class="lock-btn" data-child-home><span aria-hidden="true">🏠</span> Início</button>
+        </div>
+        <h1 id="reward-title" class="select-title">O que você quer ganhar?</h1>
+        <p class="select-sub">Cada etapa vale uma ⭐. No fim, você ganha o prêmio.</p>
+        <div id="reward-grid" class="reward-grid"></div>
+        <p style="text-align:center;margin-top:20px">
+            <button class="btn btn-outline" id="reward-skip"><span class="ico" aria-hidden="true">▶️</span> Só jogar</button>
+        </p>
     </div>
 </section>
 
@@ -266,6 +315,11 @@
         <!-- Diário -->
         <div class="tab-panel" id="tab-diary" role="tabpanel">
             <div class="card" style="margin-bottom:16px">
+                <h3><span aria-hidden="true">💬</span> Pedidos da criança (últimos 7 dias)</h3>
+                <div id="requests-summary" class="chip-row"></div>
+                <div id="requests-list" class="list" style="margin-top:12px"></div>
+            </div>
+            <div class="card" style="margin-bottom:16px">
                 <form id="diary-form">
                     <div class="field">
                         <label for="diary-text">Nova observação</label>
@@ -298,7 +352,7 @@
 
         <!-- Plano de atividades -->
         <div class="tab-panel" id="tab-plan" role="tabpanel">
-            <p class="shared-note" style="margin-bottom:12px">Escolha o que aparece para a criança (poucas opções ajudam), o nível e quantas etapas cada atividade tem. A ⭐ destaca a atividade no menu.</p>
+            <p class="shared-note" style="margin-bottom:12px">Escolha o que aparece para a criança (poucas opções ajudam), o nível, quantas etapas cada atividade tem e, se quiser, um timer visual. A ⭐ destaca a atividade no menu.</p>
             <div id="plan-list" class="list"></div>
             <div class="card" style="margin-top:16px">
                 <h3>Critério de domínio</h3>
@@ -317,9 +371,10 @@
                 <h3>Adicionar etapa da rotina</h3>
                 <form id="routine-form">
                     <div class="field"><span class="label">Pictograma</span><div id="routine-emoji" class="emoji-grid" role="group" aria-label="Pictograma"></div></div>
-                    <div class="grid-2" style="align-items:end">
+                    <div class="grid-3" style="align-items:end">
                         <div class="field"><label for="routine-label">Nome</label><input id="routine-label" maxlength="60" required placeholder="Ex.: Escovar os dentes"></div>
                         <div class="field"><label for="routine-time">Horário (opcional)</label><input id="routine-time" type="time"></div>
+                        <div class="field"><label for="routine-duration">Timer visual</label><select id="routine-duration"></select></div>
                     </div>
                     <button class="btn" type="submit"><span aria-hidden="true">➕</span> Adicionar</button>
                     <button class="btn btn-soft" type="button" id="routine-template"><span aria-hidden="true">📋</span> Usar rotina de exemplo</button>
@@ -371,6 +426,27 @@
                         </div>
                     </div>
                 </div>
+                <div class="card">
+                    <h3><span aria-hidden="true">⭐</span> Quadro de fichas</h3>
+                    <div class="switch-row"><label for="set-tokens">Antes de cada atividade, a criança escolhe um prêmio e ganha uma ⭐ por etapa</label><input type="checkbox" id="set-tokens"></div>
+                    <p class="shared-note" style="margin:10px 0 8px">Prêmios que aparecem para escolher (toque para ligar ou desligar):</p>
+                    <div id="reward-options" class="chip-row"></div>
+                    <form id="reward-form" class="custom-reward">
+                        <span class="label" style="font-weight:700">Criar prêmio</span>
+                        <div id="reward-emoji" class="emoji-grid" role="group" aria-label="Figura do prêmio"></div>
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+                            <label for="reward-label" class="sr-only">Nome do prêmio</label>
+                            <input id="reward-label" class="input" style="flex:1;min-width:160px" maxlength="30" required placeholder="Ex.: Ver o dinossauro">
+                            <button class="btn btn-small" type="submit"><span aria-hidden="true">➕</span> Adicionar</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3><span aria-hidden="true">💬</span> Prancha de pedidos</h3>
+                    <div class="switch-row"><label for="set-requests">Mostrar o botão "Pedir" na área da criança</label><input type="checkbox" id="set-requests"></div>
+                    <p class="shared-note" style="margin:10px 0 8px">Pedidos disponíveis (toque para ligar ou desligar). Cada pedido é falado em voz alta e aparece no Diário.</p>
+                    <div id="request-options" class="chip-row"></div>
+                </div>
                 <div class="card" id="invites-card">
                     <h3>Convites recebidos</h3>
                     <div id="invites-list" class="list"></div>
@@ -379,6 +455,7 @@
                     <h3>Conta e privacidade</h3>
                     <p class="shared-note" id="account-info" style="margin-bottom:12px"></p>
                     <button class="btn btn-danger" id="delete-account-btn"><span aria-hidden="true">🗑️</span> Excluir minha conta e todos os dados</button>
+                    <p class="shared-note" id="picto-credit" style="margin-top:14px"></p>
                 </div>
             </div>
         </div>
@@ -422,15 +499,40 @@
     </div>
 </div>
 
+<!-- ============ PRANCHA DE PEDIDOS ============ -->
+<button id="ask-btn" class="ask-fab hidden" aria-label="Pedir alguma coisa">
+    <span class="ico" aria-hidden="true">💬</span> Pedir
+</button>
+<div id="ask-modal" class="modal ask-modal hidden" role="dialog" aria-modal="true" aria-labelledby="ask-title">
+    <div class="card">
+        <div id="ask-choose">
+            <div class="ask-head">
+                <h2 id="ask-title"><span aria-hidden="true">💬</span> O que você quer?</h2>
+                <button class="lock-btn" id="ask-close" aria-label="Fechar"><span aria-hidden="true">✖️</span></button>
+            </div>
+            <div id="ask-grid" class="ask-grid"></div>
+        </div>
+        <div id="ask-said" class="ask-said hidden" aria-live="assertive">
+            <div id="ask-said-pic" class="pic" aria-hidden="true"></div>
+            <p id="ask-said-text"></p>
+            <p class="shared-note">Um adulto vai ver o seu pedido.</p>
+            <button class="btn btn-success" id="ask-ok" style="min-width:200px"><span class="ico" aria-hidden="true">👍</span> OK</button>
+        </div>
+    </div>
+</div>
+
 <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
 <script src="/js/api.js"></script>
 <script src="/js/ui.js"></script>
+<script src="/js/pictos.js"></script>
 <script src="/js/sound.js"></script>
 <script src="/js/theme.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/timer.js"></script>
 <script src="/js/child.js"></script>
 <script src="/js/activities.js"></script>
+<script src="/js/board.js"></script>
 <script src="/js/admin.js"></script>
 <script src="/js/app.js"></script>
 </body>

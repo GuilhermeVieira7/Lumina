@@ -1,20 +1,24 @@
-const CACHE_NAME = 'lumina-v3';
+const CACHE_NAME = 'lumina-v4';
 const STATIC_ASSETS = [
     '/',
     '/css/style.css',
     '/js/api.js',
     '/js/ui.js',
+    '/js/pictos.js',
     '/js/sound.js',
     '/js/theme.js',
     '/js/auth.js',
+    '/js/timer.js',
     '/js/child.js',
     '/js/activities.js',
+    '/js/board.js',
     '/js/admin.js',
     '/js/app.js',
     '/js/vendor/chart.umd.js',
     '/img/mascot/fox_idle.png',
     '/img/mascot/fox_happy.png',
     '/img/mascot/fox_sad.png',
+    '/img/pictos/index.json',
     '/manifest.json',
 ];
 

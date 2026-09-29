@@ -8,7 +8,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+import json
+
 from database import Base
+from data.communication import DEFAULT_REQUESTS, DEFAULT_REWARDS
 
 
 class User(Base):
@@ -51,6 +54,7 @@ class Profile(Base):
     routine = relationship("RoutineItem", back_populates="profile", cascade="all, delete-orphan")
     access = relationship("ProfileAccess", back_populates="profile", cascade="all, delete-orphan")
     decisions = relationship("RecommendationDecision", back_populates="profile", cascade="all, delete-orphan")
+    requests = relationship("ChildRequest", back_populates="profile", cascade="all, delete-orphan")
 
 
 class Session(Base):
@@ -69,6 +73,8 @@ class Session(Base):
     stars = Column(Integer, default=0)
     is_practice = Column(Boolean, default=False)
     help_level = Column(String(20), nullable=True)  # none, verbal, gesture, physical
+    reward = Column(String(60), nullable=True)      # prêmio escolhido no quadro de fichas
+    timed_out = Column(Boolean, default=False)      # terminou pelo timer antes das etapas
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     profile = relationship("Profile", back_populates="sessions")
@@ -108,8 +114,28 @@ class Settings(Base):
     low_stimulus = Column(Boolean, default=False)
     mastery_threshold = Column(Integer, default=85)  # % de acerto para considerar domínio
     mastery_sessions = Column(Integer, default=3)    # sessões seguidas acima do critério
+    token_board = Column(Boolean, default=True)      # quadro de fichas antes das atividades
+    request_board = Column(Boolean, default=True)    # botão "Pedir" na área da criança
+    rewards_json = Column(Text, nullable=True)       # prêmios que a criança pode escolher
+    requests_json = Column(Text, nullable=True)      # pedidos que aparecem na prancha
 
     profile = relationship("Profile", back_populates="settings")
+
+    @property
+    def rewards(self):
+        try:
+            value = json.loads(self.rewards_json) if self.rewards_json else None
+        except ValueError:
+            value = None
+        return value if value else [dict(r) for r in DEFAULT_REWARDS]
+
+    @property
+    def requests(self):
+        try:
+            value = json.loads(self.requests_json) if self.requests_json else None
+        except ValueError:
+            value = None
+        return value if value else list(DEFAULT_REQUESTS)
 
 
 class Achievement(Base):
@@ -173,6 +199,7 @@ class ActivityPlan(Base):
     enabled = Column(Boolean, default=True)
     recommended = Column(Boolean, default=False)
     question_count = Column(Integer, default=5)
+    time_limit = Column(Integer, default=0)  # minutos no timer visual (0 = sem timer)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     profile = relationship("Profile", back_populates="plans")
@@ -205,6 +232,7 @@ class RoutineItem(Base):
     icon = Column(String(16), default="⭐")
     label = Column(String(60), nullable=False)
     time = Column(String(5), nullable=True)  # "08:00"
+    duration = Column(Integer, nullable=True)  # minutos no timer visual
     done_on = Column(Date, nullable=True)    # dia em que foi marcada como feita
 
     profile = relationship("Profile", back_populates="routine")
@@ -223,3 +251,16 @@ class ProfileAccess(Base):
 
     profile = relationship("Profile", back_populates="access")
     professional = relationship("User")
+
+
+class ChildRequest(Base):
+    """Pedido feito pela criança na prancha de comunicação (pausa, água, ajuda...)."""
+    __tablename__ = "child_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id"), nullable=False)
+    key = Column(String(20), nullable=False)
+    context = Column(String(60), nullable=True)  # ex.: nome da atividade em andamento
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    profile = relationship("Profile", back_populates="requests")

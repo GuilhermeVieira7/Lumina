@@ -45,14 +45,25 @@ const UI = {
     ROUTINE_EMOJIS: ['🌅', '🪥', '🚿', '🛁', '👕', '🥣', '🍽️', '🍎', '🥤', '🏫', '🎒', '📚', '✏️', '⭐',
         '🧸', '⚽', '🎨', '🎵', '📺', '🌳', '🚗', '🛒', '👨‍👩‍👧', '🩺', '🧩', '😴', '🌙', '🚽'],
 
+    REWARD_EMOJIS: ['🧸', '📺', '🎵', '⚽', '🍪', '🤗', '🛝', '🫧', '📱', '🎨', '🚲', '🧩',
+        '🍎', '🍌', '🥤', '🌳', '🚗', '🚂', '🐶', '🐱', '📚', '⭐', '🎮', '🦖'],
+
+    // Telas da criança: nelas aparece o botão "Pedir" e não há funções de adulto
+    CHILD_SCREENS: ['child-home', 'activity-screen', 'finish-screen', 'routine-screen', 'progress-screen', 'timer-screen', 'reward-screen'],
+
     esc(value) {
         return String(value ?? '').replace(/[&<>"']/g, c => (
             { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
         ));
     },
 
+    /** Pictograma ARASAAC quando baixado; senão, o próprio emoji. */
+    pic(emoji, opts) { return Pictos.html(emoji, opts); },
+
     showScreen(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+        document.body.classList.toggle('child-mode', this.CHILD_SCREENS.includes(id));
+        document.dispatchEvent(new CustomEvent('screenchange', { detail: id }));
         window.scrollTo(0, 0);
         const heading = document.querySelector(`#${id} h1, #${id} h2`);
         if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true }); }
