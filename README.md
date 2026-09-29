@@ -43,6 +43,10 @@ docker compose up -d --build
 
 Acesse **http://localhost** (porta 80). O app espera o banco ficar pronto antes de subir, e os dados ficam guardados no volume `pgdata`. Para parar: `docker compose down` (os dados continuam); para apagar tudo e recomeçar: `docker compose down -v`. Se a porta 80 ou 5432 já estiver em uso no computador, troque o número da esquerda em `ports` no `docker-compose.yml` (ex.: `"8080:80"`).
 
+**pgAdmin (ver e editar as tabelas):** abra **http://localhost:5050** e entre com `PGADMIN_EMAIL` e `PGADMIN_PASSWORD` do `.env`. O servidor **Lumina** já aparece cadastrado; ao abrir, digite a `POSTGRES_PASSWORD`. As tabelas ficam em Lumina → Databases → lumina → Schemas → public → Tables (botão direito → View/Edit Data). O banco e o pgAdmin só aceitam conexões deste computador.
+
+Como a segurança do sistema funciona: [docs/SEGURANCA.md](docs/SEGURANCA.md).
+
 ---
 
 ## 🧠 O Que Avaliar
@@ -127,6 +131,7 @@ Pictogramas: Sergio Palao. Origem: ARASAAC (https://arasaac.org). Licença: CC B
 | Recomendação | Regras e pontuação explicáveis (Python) |
 | Gráficos | Chart.js (servido localmente, funciona offline) |
 | Relatórios | FPDF2 (PDF de acompanhamento) |
+| Senhas | Argon2id (argon2-cffi) |
 | Deploy | Docker + Docker Compose |
 | Nuvem | Microsoft Azure |
 

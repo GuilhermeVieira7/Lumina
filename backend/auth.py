@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 import bcrypt
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHashError, VerificationError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session as DBSession
@@ -31,22 +33,50 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 
+# Senhas: Argon2id, vencedor da Password Hashing Competition e recomendado pela
+# OWASP. Cada hash tem sal aleatório e gasta 64 MiB de memória e 3 passadas, o que
+# torna caro testar milhões de senhas numa placa de vídeo.
+_argon2 = PasswordHasher(time_cost=3, memory_cost=64 * 1024, parallelism=4)
+
+
 def _bcrypt_bytes(password: str) -> bytes:
     # O bcrypt só usa os primeiros 72 bytes e a versão 5 recusa senhas maiores
     return password.encode('utf-8')[:72]
 
 
 def hash_password(password: str) -> str:
-    """Gerar hash bcrypt da senha."""
-    return bcrypt.hashpw(_bcrypt_bytes(password), bcrypt.gensalt()).decode('utf-8')
+    """Gerar hash Argon2id da senha."""
+    return _argon2.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verificar senha contra hash."""
+    """Verificar a senha contra o hash (Argon2id ou bcrypt de contas antigas)."""
+    if not hashed_password:
+        return False
+    if hashed_password.startswith("$argon2"):
+        try:
+            return _argon2.verify(hashed_password, plain_password)
+        except (VerificationError, InvalidHashError):
+            return False
     try:
         return bcrypt.checkpw(_bcrypt_bytes(plain_password), hashed_password.encode('utf-8'))
     except ValueError:
         return False
+
+
+# Usado quando o usuário não existe, para o login levar o mesmo tempo nos dois casos
+# (assim não dá para descobrir quais nomes de usuário existem medindo o tempo).
+DUMMY_HASH = _argon2.hash(secrets.token_urlsafe(16))
+
+
+def needs_rehash(hashed_password: str) -> bool:
+    """Contas antigas (bcrypt) ou parâmetros mais fracos passam para o Argon2id atual."""
+    if not hashed_password.startswith("$argon2"):
+        return True
+    try:
+        return _argon2.check_needs_rehash(hashed_password)
+    except InvalidHashError:
+        return True
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

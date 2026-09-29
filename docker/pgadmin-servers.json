@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Lumina",
+      "Group": "Servers",
+      "Host": "db",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "lumina",
+      "SSLMode": "prefer"
+    }
+  }
+}
