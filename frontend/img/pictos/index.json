@@ -1,4 +1,335 @@
 {
  "attribution": "Pictogramas: Sergio Palao. Origem: ARASAAC (https://arasaac.org). Licença: CC BY-NC-SA. Propriedade: Governo de Aragão (Espanha).",
- "pictos": {}
+ "pictos": {
+  "🌅": {
+   "file": "acordar.png",
+   "id": 8989,
+   "term": "acordar"
+  },
+  "🪥": {
+   "file": "escovar-os-dentes.png",
+   "id": 2326,
+   "term": "escovar os dentes"
+  },
+  "🚿": {
+   "file": "chuveiro.png",
+   "id": 2370,
+   "term": "chuveiro"
+  },
+  "🛁": {
+   "file": "tomar-banho.png",
+   "id": 6058,
+   "term": "tomar banho"
+  },
+  "👕": {
+   "file": "vestir.png",
+   "id": 6627,
+   "term": "vestir"
+  },
+  "🥣": {
+   "file": "tomar-o-cafe-da-manha.png",
+   "id": 37263,
+   "term": "tomar o café da manhã"
+  },
+  "🍽️": {
+   "file": "almocar.png",
+   "id": 28206,
+   "term": "almoçar"
+  },
+  "🏫": {
+   "file": "escola.png",
+   "id": 32446,
+   "term": "escola"
+  },
+  "🎒": {
+   "file": "mochila.png",
+   "id": 2475,
+   "term": "mochila"
+  },
+  "📚": {
+   "file": "livro.png",
+   "id": 25191,
+   "term": "livro"
+  },
+  "✏️": {
+   "file": "lapis.png",
+   "id": 2440,
+   "term": "lápis"
+  },
+  "⭐": {
+   "file": "estrela.png",
+   "id": 2752,
+   "term": "estrela"
+  },
+  "🧸": {
+   "file": "brinquedo.png",
+   "id": 9813,
+   "term": "brinquedo"
+  },
+  "⚽": {
+   "file": "bola.png",
+   "id": 3241,
+   "term": "bola"
+  },
+  "🎨": {
+   "file": "pintar.png",
+   "id": 2348,
+   "term": "pintar"
+  },
+  "🎵": {
+   "file": "musica.png",
+   "id": 24791,
+   "term": "música"
+  },
+  "📺": {
+   "file": "televisao.png",
+   "id": 25498,
+   "term": "televisão"
+  },
+  "🌳": {
+   "file": "parque.png",
+   "id": 39572,
+   "term": "parque"
+  },
+  "🚗": {
+   "file": "carro.png",
+   "id": 2339,
+   "term": "carro"
+  },
+  "🛒": {
+   "file": "supermercado.png",
+   "id": 3389,
+   "term": "supermercado"
+  },
+  "👨‍👩‍👧": {
+   "file": "familia.png",
+   "id": 38351,
+   "term": "família"
+  },
+  "🩺": {
+   "file": "medico.png",
+   "id": 6561,
+   "term": "médico"
+  },
+  "🧩": {
+   "file": "quebra-cabeca.png",
+   "id": 2540,
+   "term": "quebra-cabeça"
+  },
+  "😴": {
+   "file": "dormir.png",
+   "id": 6479,
+   "term": "dormir"
+  },
+  "🌙": {
+   "file": "noite.png",
+   "id": 26997,
+   "term": "noite"
+  },
+  "⏸️": {
+   "file": "descansar.png",
+   "id": 16643,
+   "term": "descansar"
+  },
+  "🙋": {
+   "file": "ajuda.png",
+   "id": 12252,
+   "term": "ajuda"
+  },
+  "🥤": {
+   "file": "agua.png",
+   "id": 32464,
+   "term": "água"
+  },
+  "🥪": {
+   "file": "comer.png",
+   "id": 6456,
+   "term": "comer"
+  },
+  "🤗": {
+   "file": "abraco.png",
+   "id": 4550,
+   "term": "abraço"
+  },
+  "🔇": {
+   "file": "silencio.png",
+   "id": 5936,
+   "term": "silêncio"
+  },
+  "🥱": {
+   "file": "cansado.png",
+   "id": 35537,
+   "term": "cansado"
+  },
+  "🤕": {
+   "file": "dor.png",
+   "id": 2367,
+   "term": "dor"
+  },
+  "✋": {
+   "file": "terminar.png",
+   "id": 5358,
+   "term": "terminar"
+  },
+  "👍": {
+   "file": "sim.png",
+   "id": 5584,
+   "term": "sim"
+  },
+  "👎": {
+   "file": "nao.png",
+   "id": 5526,
+   "term": "não"
+  },
+  "🍪": {
+   "file": "biscoito.png",
+   "id": 8295,
+   "term": "biscoito"
+  },
+  "🫧": {
+   "file": "bolhas-de-sabao.png",
+   "id": 36525,
+   "term": "bolhas de sabão"
+  },
+  "📱": {
+   "file": "tablet.png",
+   "id": 28099,
+   "term": "tablet"
+  },
+  "🚲": {
+   "file": "bicicleta.png",
+   "id": 6935,
+   "term": "bicicleta"
+  },
+  "🔢": {
+   "file": "numeros.png",
+   "id": 2879,
+   "term": "números"
+  },
+  "➕": {
+   "file": "somar.png",
+   "id": 5868,
+   "term": "somar"
+  },
+  "🔤": {
+   "file": "alfabeto.png",
+   "id": 3050,
+   "term": "alfabeto"
+  },
+  "⏰": {
+   "file": "relogio.png",
+   "id": 2549,
+   "term": "relógio"
+  },
+  "💰": {
+   "file": "dinheiro.png",
+   "id": 4630,
+   "term": "dinheiro"
+  },
+  "📦": {
+   "file": "caixa.png",
+   "id": 5935,
+   "term": "caixa"
+  },
+  "📅": {
+   "file": "agenda.png",
+   "id": 5898,
+   "term": "agenda"
+  },
+  "🎮": {
+   "file": "brincar.png",
+   "id": 23392,
+   "term": "brincar"
+  },
+  "⏳": {
+   "file": "esperar.png",
+   "id": 36914,
+   "term": "esperar"
+  },
+  "😊": {
+   "file": "feliz.png",
+   "id": 9907,
+   "term": "feliz"
+  },
+  "😄": {
+   "file": "contente.png",
+   "id": 35547,
+   "term": "contente"
+  },
+  "😢": {
+   "file": "triste.png",
+   "id": 35545,
+   "term": "triste"
+  },
+  "😠": {
+   "file": "zangado.png",
+   "id": 35539,
+   "term": "zangado"
+  },
+  "😰": {
+   "file": "preocupado.png",
+   "id": 26985,
+   "term": "preocupado"
+  },
+  "😐": {
+   "file": "serio.png",
+   "id": 8690,
+   "term": "sério"
+  },
+  "🍎": {
+   "file": "maca.png",
+   "id": 2462,
+   "term": "maçã"
+  },
+  "🍌": {
+   "file": "banana.png",
+   "id": 2530,
+   "term": "banana"
+  },
+  "🍕": {
+   "file": "pizza.png",
+   "id": 2527,
+   "term": "pizza"
+  },
+  "🐱": {
+   "file": "gato.png",
+   "id": 7114,
+   "term": "gato"
+  },
+  "🐶": {
+   "file": "cachorro.png",
+   "id": 7201,
+   "term": "cachorro"
+  },
+  "🐘": {
+   "file": "elefante.png",
+   "id": 2372,
+   "term": "elefante"
+  },
+  "🌺": {
+   "file": "flor.png",
+   "id": 7104,
+   "term": "flor"
+  },
+  "🚂": {
+   "file": "trem.png",
+   "id": 39581,
+   "term": "trem"
+  },
+  "✈️": {
+   "file": "aviao.png",
+   "id": 2264,
+   "term": "avião"
+  },
+  "👟": {
+   "file": "tenis.png",
+   "id": 2621,
+   "term": "tênis"
+  },
+  "👗": {
+   "file": "vestido.png",
+   "id": 2613,
+   "term": "vestido"
+  }
+ }
 }
