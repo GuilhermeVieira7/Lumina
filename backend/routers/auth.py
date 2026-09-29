@@ -11,7 +11,7 @@ import rate_limit
 from database import get_db
 from models import Note, ProfileAccess, RecommendationDecision, User
 from schemas import PasswordCheck, UserCreate, UserLogin, UserResponse, TokenResponse
-from auth import hash_password, verify_password, create_access_token, get_current_user
+from auth import DUMMY_HASH, hash_password, verify_password, needs_rehash, create_access_token, get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["Autenticação"])
 
@@ -51,10 +51,12 @@ def login(credentials: UserLogin, db: DBSession = Depends(get_db)):
     key = f"login:{credentials.username.lower()}"
     rate_limit.check(key)
     user = db.query(User).filter(User.username == credentials.username).first()
-    if not user or not verify_password(credentials.password, user.password_hash):
+    valid = verify_password(credentials.password, user.password_hash if user else DUMMY_HASH)
+    if not user or not valid:
         rate_limit.failed(key)
         raise HTTPException(status_code=401, detail="Usuário ou senha incorretos")
     rate_limit.succeeded(key)
+    _upgrade_hash(db, user, credentials.password)
 
     token = create_access_token(data={"sub": str(user.id)})
     return TokenResponse(access_token=token, user=UserResponse.model_validate(user))
@@ -64,6 +66,13 @@ def login(credentials: UserLogin, db: DBSession = Depends(get_db)):
 def get_me(current_user: User = Depends(get_current_user)):
     """Obter dados do usuário autenticado."""
     return UserResponse.model_validate(current_user)
+
+
+def _upgrade_hash(db: DBSession, user: User, password: str) -> None:
+    """Senha certa de conta antiga (bcrypt): regrava em Argon2id sem o usuário perceber."""
+    if needs_rehash(user.password_hash):
+        user.password_hash = hash_password(password)
+        db.commit()
 
 
 def _check_password(password: str, user: User) -> None:

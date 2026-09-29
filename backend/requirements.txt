@@ -10,3 +10,4 @@ aiofiles
 python-dotenv
 fpdf2
 psycopg2-binary
+argon2-cffi

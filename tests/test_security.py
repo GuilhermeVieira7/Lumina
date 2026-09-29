@@ -50,3 +50,36 @@ def test_security_headers(client):
     assert resp.headers["x-content-type-options"] == "nosniff"
     assert resp.headers["x-frame-options"] == "DENY"
     assert "access-control-allow-origin" not in client.get("/api/activities", headers={"Origin": "https://evil.example"}).headers
+
+
+def test_passwords_are_stored_with_argon2id(client):
+    from database import SessionLocal
+    from models import User
+
+    _, username, _ = _register(client)
+    db = SessionLocal()
+    try:
+        stored = db.query(User).filter(User.username == username).one().password_hash
+    finally:
+        db.close()
+    assert stored.startswith("$argon2id$")
+
+
+def test_old_bcrypt_accounts_move_to_argon2_on_login(client):
+    import bcrypt
+    from database import SessionLocal
+    from models import User
+
+    _, username, password = _register(client)
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.username == username).one()
+        user.password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+        db.commit()
+        assert client.post("/api/auth/login", json={"username": username, "password": password}).status_code == 200
+        db.refresh(user)
+        assert user.password_hash.startswith("$argon2id$")
+    finally:
+        db.close()
+    assert client.post("/api/auth/login", json={"username": username, "password": password}).status_code == 200
+    assert client.post("/api/auth/login", json={"username": username, "password": WRONG}).status_code == 401
