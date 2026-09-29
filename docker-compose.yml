@@ -32,7 +32,7 @@ services:
     environment:
       # Inject DATABASE_URL so SQLAlchemy in FastAPI hooks into the Postgres container smoothly
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      - SECRET_KEY=${SECRET_KEY:-troque-esta-chave}
+      - SECRET_KEY=${SECRET_KEY:-}
     volumes:
       # Volumes compartilhados se precisar que dados locais subam
       # - ./backend:/app/backend

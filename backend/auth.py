@@ -11,6 +11,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session as DBSession
 import os
+import secrets
 from dotenv import load_dotenv
 
 from database import get_db
@@ -18,21 +19,34 @@ from models import User
 
 load_dotenv()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "tea-system-secret-key-change-in-production")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    # Sem chave configurada, cria uma aleatória a cada início: ninguém consegue
+    # forjar um login, mas quem estava logado precisa entrar de novo após reiniciar.
+    SECRET_KEY = secrets.token_urlsafe(48)
+    print("[AUTH] SECRET_KEY não definida no .env; usando uma chave aleatória temporária.")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 
+def _bcrypt_bytes(password: str) -> bytes:
+    # O bcrypt só usa os primeiros 72 bytes e a versão 5 recusa senhas maiores
+    return password.encode('utf-8')[:72]
+
+
 def hash_password(password: str) -> str:
     """Gerar hash bcrypt da senha."""
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    return bcrypt.hashpw(_bcrypt_bytes(password), bcrypt.gensalt()).decode('utf-8')
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verificar senha contra hash."""
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    try:
+        return bcrypt.checkpw(_bcrypt_bytes(plain_password), hashed_password.encode('utf-8'))
+    except ValueError:
+        return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
