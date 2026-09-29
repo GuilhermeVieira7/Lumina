@@ -29,18 +29,17 @@ const API = {
                 body: body ? JSON.stringify(body) : null,
             });
 
-            if (res.status === 401) {
+            if (res.status === 401 && !path.startsWith('/auth/login')) {
                 this.clearToken();
-                if (window.AuthController) {
-                    AuthController.showLogin();
-                }
+                if (window.AuthController) AuthController.expire();
                 throw new Error('Sessão expirada. Faça login novamente.');
             }
 
             const data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data.detail || 'Erro na requisição');
+                const detail = Array.isArray(data.detail) ? 'Confira os campos preenchidos' : data.detail;
+                throw new Error(detail || 'Erro na requisição');
             }
 
             return data;
@@ -56,5 +55,6 @@ const API = {
     get(path) { return this.request('GET', path); },
     post(path, body) { return this.request('POST', path, body); },
     put(path, body) { return this.request('PUT', path, body); },
+    patch(path, body) { return this.request('PATCH', path, body); },
     delete(path) { return this.request('DELETE', path); },
 };

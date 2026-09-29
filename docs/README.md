@@ -25,16 +25,27 @@ Aguarde a mensagem: `Uvicorn running on http://127.0.0.1:8000`
 - **Sistema:** http://127.0.0.1:8000
 - **API Docs:** http://127.0.0.1:8000/api/docs
 
-**Credenciais de teste:** usuário `admin` / senha `admin1234`
+**Contas de demonstração** (criadas na primeira execução):
+
+| Papel | Usuário | Senha |
+|---|---|---|
+| Responsável (dono do perfil "Aluno Demo") | `admin` | `admin1234` |
+| Profissional com acesso autorizado ao "Aluno Demo" | `terapeuta` | `terapeuta1234` |
 
 ---
 
 ## 🧠 O Que Avaliar
 
-1. **Interface adaptativa** — Layout construído sob as diretrizes TEACCH/ABA para crianças com TEA
-2. **IA Adaptativa** — `backend/ai_engine.py` — dificuldade auto-regulada via `RandomForestClassifier` com base em tempo de resposta, tentativas e falhas
-3. **Gerador de Laudos em PDF** — Painel admin → aba "Exportar" → download de relatório clínico gerado dinamicamente
-4. **API REST documentada** — http://127.0.0.1:8000/api/docs (Swagger interativo)
+1. **Área da criança visual (TEACCH)** — cartões grandes com pictogramas coloridos por área de habilidade, quadro "Agora / Depois", uma instrução por tela, trilha de etapas com bandeira de chegada e tela "Terminou!".
+2. **Agenda visual de rotina** — o adulto monta a rotina com pictogramas; a criança marca cada etapa como feita.
+3. **Recomendação explicável** — `backend/ai_engine.py`: regras de domínio e de dificuldade (ABA) e pontuação por interesses, metas, desempenho e variedade. Cada sugestão mostra os motivos e só vale depois que um adulto aceita, ajusta ou descarta.
+4. **Painel dos Adultos protegido por senha** — progresso por área e período, sessões com nível de ajuda, diário de observações, metas, plano de atividades, rotina, perfil e ajustes sensoriais.
+5. **Acompanhamento compartilhado** — o responsável convida um profissional, que aceita o convite; o acesso pode ser revogado a qualquer momento.
+6. **LGPD** — consentimento no cadastro, perfil sem diagnóstico, exclusão da criança ou da conta com todos os dados.
+7. **Relatório em PDF** — Painel → Progresso → "Relatório PDF".
+8. **API REST documentada** — http://127.0.0.1:8000/api/docs (Swagger interativo).
+
+Testes automatizados: `pip install -r requirements-dev.txt` e `pytest` na raiz do projeto.
 
 > Guia detalhado de avaliação acadêmica: [`docs/INSTRUÇÕES_AVALIAÇÃO.md`](docs/INSTRUÇÕES_AVALIAÇÃO.md)
 
@@ -54,13 +65,15 @@ PROJETO TCC/
 │   ├── main.py              ← Ponto de entrada
 │   ├── models.py            ← Banco de dados (SQLAlchemy)
 │   ├── schemas.py           ← Validações (Pydantic)
-│   ├── ai_engine.py         ← IA Adaptativa (RandomForest)
+│   ├── permissions.py       ← Quem acessa cada perfil (responsável e profissionais)
+│   ├── ai_engine.py         ← Recomendação por regras e pontuação
 │   └── routers/             ← Endpoints da API
 │
 ├── frontend/                ← Interface Web (PWA)
 │   ├── index.html           ← Aplicação principal
 │   ├── css/style.css        ← Estilos
-│   └── js/                  ← Lógica do cliente
+│   ├── img/mascot/          ← Raposa Lumi (mascote)
+│   └── js/                  ← Lógica do cliente (Chart.js incluído em js/vendor)
 │
 └── docs/                    ← Documentação técnica
     ├── schema.sql           ← Schema PostgreSQL (deploy)
@@ -78,8 +91,9 @@ PROJETO TCC/
 | Frontend | HTML5, CSS3, JavaScript (Vanilla) |
 | Banco de dados (local) | SQLite (automático) |
 | Banco de dados (produção) | PostgreSQL 15 |
-| IA Adaptativa | scikit-learn (RandomForest) |
-| Relatórios | FPDF2 (PDF clínico) |
+| Recomendação | Regras e pontuação explicáveis (Python) |
+| Gráficos | Chart.js (servido localmente, funciona offline) |
+| Relatórios | FPDF2 (PDF de acompanhamento) |
 | Deploy | Docker + Docker Compose |
 | Nuvem | Microsoft Azure |
 

@@ -13,7 +13,9 @@ from datetime import datetime, date
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: Optional[str] = None
-    password: str = Field(..., min_length=4)
+    password: str = Field(..., min_length=6)
+    role: str = "parent"  # parent (responsável) ou therapist (profissional)
+    consent: bool = False  # aceite do termo de consentimento (LGPD)
 
 class UserLogin(BaseModel):
     username: str
@@ -24,10 +26,14 @@ class UserResponse(BaseModel):
     username: str
     email: Optional[str] = None
     role: str
+    consent_at: Optional[datetime] = None
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+class PasswordCheck(BaseModel):
+    password: str
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -41,13 +47,17 @@ class ProfileCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     avatar: str = "😊"
     birth_date: Optional[date] = None
-    diagnosis: Optional[str] = None
+    interests: Optional[str] = Field(None, max_length=300)
+    sensory_notes: Optional[str] = Field(None, max_length=300)
+    communication: Optional[str] = Field(None, max_length=30)
 
 class ProfileUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
     avatar: Optional[str] = None
     birth_date: Optional[date] = None
-    diagnosis: Optional[str] = None
+    interests: Optional[str] = Field(None, max_length=300)
+    sensory_notes: Optional[str] = Field(None, max_length=300)
+    communication: Optional[str] = Field(None, max_length=30)
 
 class ProfileResponse(BaseModel):
     id: int
@@ -55,7 +65,11 @@ class ProfileResponse(BaseModel):
     name: str
     avatar: str
     birth_date: Optional[date] = None
-    diagnosis: Optional[str] = None
+    interests: Optional[str] = None
+    sensory_notes: Optional[str] = None
+    communication: Optional[str] = None
+    is_owner: bool = True
+    owner_name: Optional[str] = None
     created_at: datetime
     
     class Config:
@@ -93,10 +107,14 @@ class SessionResponse(BaseModel):
     total_time: int
     stars: int
     is_practice: bool
+    help_level: Optional[str] = None
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+class SessionUpdate(BaseModel):
+    help_level: Optional[str] = None  # none, verbal, gesture, physical
 
 
 # ---- Settings Schemas ----
@@ -110,6 +128,10 @@ class SettingsUpdate(BaseModel):
     language: Optional[str] = None
     auto_backup: Optional[bool] = None
     alerts_enabled: Optional[bool] = None
+    voice_enabled: Optional[bool] = None
+    low_stimulus: Optional[bool] = None
+    mastery_threshold: Optional[int] = Field(None, ge=50, le=100)
+    mastery_sessions: Optional[int] = Field(None, ge=1, le=10)
 
 class SettingsResponse(BaseModel):
     difficulty: int
@@ -120,6 +142,10 @@ class SettingsResponse(BaseModel):
     language: str
     auto_backup: bool
     alerts_enabled: bool
+    voice_enabled: bool = False
+    low_stimulus: bool = False
+    mastery_threshold: int = 85
+    mastery_sessions: int = 3
 
     class Config:
         from_attributes = True
@@ -180,11 +206,104 @@ class ErrorPattern(BaseModel):
     suggestion: str
 
 class Recommendation(BaseModel):
-    type: str  # positive, attention, pattern, general
+    key: str
+    kind: str  # level, activity, pattern, general
+    type: str  # positive, attention, pattern, general, suggestion
     activity: Optional[str] = None
+    current_level: Optional[int] = None
+    suggested_level: Optional[int] = None
     title: str
     message: str
+    reasons: List[str] = []
     priority: str  # high, medium, low
+
+class RecommendationDecisionIn(BaseModel):
+    key: str
+    activity_type: Optional[str] = None
+    action: str  # accept, adjust, dismiss
+    level: Optional[int] = Field(None, ge=1, le=10)
+
+
+# ---- Plano de atividades ----
+
+class PlanResponse(BaseModel):
+    activity_type: str
+    name: str
+    icon: str
+    area: str
+    max_level: int
+    level: int
+    enabled: bool
+    recommended: bool
+    question_count: int
+
+class PlanUpdate(BaseModel):
+    level: Optional[int] = Field(None, ge=1, le=10)
+    enabled: Optional[bool] = None
+    recommended: Optional[bool] = None
+    question_count: Optional[int] = Field(None, ge=2, le=10)
+
+
+# ---- Diário (notas) ----
+
+class NoteCreate(BaseModel):
+    profile_id: int
+    content: str = Field(..., min_length=1, max_length=2000)
+    session_id: Optional[int] = None
+
+class NoteResponse(BaseModel):
+    id: int
+    profile_id: int
+    session_id: Optional[int] = None
+    activity_type: Optional[str] = None
+    content: str
+    author: Optional[str] = None
+    author_id: Optional[int] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ---- Rotina visual ----
+
+class RoutineItemCreate(BaseModel):
+    profile_id: int
+    icon: str = Field("⭐", max_length=16)
+    label: str = Field(..., min_length=1, max_length=60)
+    time: Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")
+
+class RoutineItemUpdate(BaseModel):
+    icon: Optional[str] = Field(None, max_length=16)
+    label: Optional[str] = Field(None, min_length=1, max_length=60)
+    time: Optional[str] = Field(None, pattern=r"^(\d{2}:\d{2})?$")
+    position: Optional[int] = None
+
+class RoutineItemResponse(BaseModel):
+    id: int
+    profile_id: int
+    position: int
+    icon: str
+    label: str
+    time: Optional[str] = None
+    done_today: bool = False
+
+
+# ---- Acesso de profissionais ----
+
+class AccessInvite(BaseModel):
+    profile_id: int
+    professional: str = Field(..., min_length=3, max_length=120)  # usuário ou email
+
+class AccessResponse(BaseModel):
+    id: int
+    profile_id: int
+    profile_name: str
+    professional_id: int
+    professional_name: str
+    owner_name: str
+    status: str
+    created_at: datetime
 
 
 # ---- Dashboard / Stats Schemas ----

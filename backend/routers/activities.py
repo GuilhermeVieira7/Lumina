@@ -3,7 +3,7 @@
 # ==========================================
 
 from fastapi import APIRouter
-from data.activity_bank import get_activity_list, get_questions
+from data.activity_bank import AREAS, get_activity_list, get_questions
 
 router = APIRouter(prefix="/api/activities", tags=["Atividades"])
 
@@ -12,6 +12,12 @@ router = APIRouter(prefix="/api/activities", tags=["Atividades"])
 def list_activities():
     """Listar todas as atividades disponíveis."""
     return get_activity_list()
+
+
+@router.get("/areas")
+def list_areas():
+    """Áreas de habilidade usadas para agrupar as atividades."""
+    return AREAS
 
 
 @router.get("/{activity_type}/questions")

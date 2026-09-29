@@ -2,12 +2,14 @@
 # ROUTER: Autenticação
 # ==========================================
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session as DBSession
 
 from database import get_db
-from models import User
-from schemas import UserCreate, UserLogin, UserResponse, TokenResponse
+from models import Note, ProfileAccess, RecommendationDecision, User
+from schemas import PasswordCheck, UserCreate, UserLogin, UserResponse, TokenResponse
 from auth import hash_password, verify_password, create_access_token, get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["Autenticação"])
@@ -15,29 +17,31 @@ router = APIRouter(prefix="/api/auth", tags=["Autenticação"])
 
 @router.post("/register", response_model=TokenResponse)
 def register(user_data: UserCreate, db: DBSession = Depends(get_db)):
-    """Registrar novo usuário (pai/responsável)."""
-    # Verificar se já existe
-    existing = db.query(User).filter(
-        (User.username == user_data.username) | (User.email == user_data.email)
-    ).first()
-    if existing:
+    """Registrar responsável ou profissional, com registro do consentimento (LGPD)."""
+    if not user_data.consent:
+        raise HTTPException(status_code=400, detail="É preciso aceitar o termo de consentimento")
+    if user_data.role not in ("parent", "therapist"):
+        raise HTTPException(status_code=400, detail="Tipo de conta inválido")
+
+    query = db.query(User).filter(User.username == user_data.username)
+    if user_data.email:
+        query = db.query(User).filter((User.username == user_data.username) | (User.email == user_data.email))
+    if query.first():
         raise HTTPException(status_code=400, detail="Usuário ou email já cadastrado")
 
     user = User(
         username=user_data.username,
-        email=user_data.email,
+        email=user_data.email or None,
         password_hash=hash_password(user_data.password),
-        role="parent",
+        role=user_data.role,
+        consent_at=datetime.utcnow(),
     )
     db.add(user)
     db.commit()
     db.refresh(user)
 
     token = create_access_token(data={"sub": str(user.id)})
-    return TokenResponse(
-        access_token=token,
-        user=UserResponse.model_validate(user),
-    )
+    return TokenResponse(access_token=token, user=UserResponse.model_validate(user))
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -48,13 +52,41 @@ def login(credentials: UserLogin, db: DBSession = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Usuário ou senha incorretos")
 
     token = create_access_token(data={"sub": str(user.id)})
-    return TokenResponse(
-        access_token=token,
-        user=UserResponse.model_validate(user),
-    )
+    return TokenResponse(access_token=token, user=UserResponse.model_validate(user))
 
 
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)):
     """Obter dados do usuário autenticado."""
     return UserResponse.model_validate(current_user)
+
+
+@router.post("/verify-password")
+def verify_current_password(data: PasswordCheck, current_user: User = Depends(get_current_user)):
+    """Confirmar a senha do adulto antes de abrir o Painel dos Pais.
+
+    Responde 403 (e não 401) para não encerrar a sessão da criança por engano.
+    """
+    if not verify_password(data.password, current_user.password_hash):
+        raise HTTPException(status_code=403, detail="Senha incorreta")
+    return {"ok": True}
+
+
+@router.post("/delete-account")
+def delete_account(
+    data: PasswordCheck,
+    current_user: User = Depends(get_current_user),
+    db: DBSession = Depends(get_db),
+):
+    """Excluir a conta e todos os dados das crianças cadastradas (LGPD, RNF06)."""
+    if not verify_password(data.password, current_user.password_hash):
+        raise HTTPException(status_code=403, detail="Senha incorreta")
+
+    db.query(ProfileAccess).filter(ProfileAccess.professional_id == current_user.id).delete()
+    db.query(Note).filter(Note.author_id == current_user.id).update({Note.author_id: None})
+    db.query(RecommendationDecision).filter(RecommendationDecision.decided_by == current_user.id).update(
+        {RecommendationDecision.decided_by: None}
+    )
+    db.delete(current_user)  # perfis, sessões, notas e rotinas saem em cascata
+    db.commit()
+    return {"message": "Conta e dados excluídos"}

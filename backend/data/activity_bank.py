@@ -297,18 +297,57 @@ ACTIVITY_BANK = {
 }
 
 
+# Áreas de habilidade descritas no TCC (seção 4.2)
+AREAS = {
+    "comunicacao": {"name": "Comunicação", "icon": "💬"},
+    "cognicao": {"name": "Cognição", "icon": "🧠"},
+    "autonomia": {"name": "Autonomia na vida diária", "icon": "🏠"},
+    "socializacao": {"name": "Socialização", "icon": "🤝"},
+}
+
+ACTIVITY_AREA = {
+    "colors": "cognicao", "shapes": "cognicao", "numbers": "cognicao",
+    "sequences": "cognicao", "matching": "cognicao", "math": "cognicao",
+    "patterns": "cognicao", "categories": "comunicacao", "letters": "comunicacao",
+    "emotions": "socializacao", "clock": "autonomia", "money": "autonomia",
+}
+
+# Atividades que aparecem no menu da criança até o adulto mudar (RNF01: poucos itens por tela)
+DEFAULT_ENABLED = ["colors", "shapes", "numbers", "emotions", "letters", "categories"]
+
+
+def activity_name(activity_type: str) -> str:
+    activity = ACTIVITY_BANK.get(activity_type)
+    return activity["name"] if activity else activity_type
+
+
+def max_level(activity_type: str) -> int:
+    activity = ACTIVITY_BANK.get(activity_type)
+    return max(activity["levels"]) if activity else 1
+
+
 def get_activity_list():
     """Retorna lista resumida de todas as atividades disponíveis."""
     return [
-        {"type": key, "name": val["name"], "icon": val["icon"], "levels": list(val["levels"].keys())}
+        {
+            "type": key,
+            "name": val["name"],
+            "icon": val["icon"],
+            "area": ACTIVITY_AREA.get(key, "cognicao"),
+            "levels": list(val["levels"].keys()),
+        }
         for key, val in ACTIVITY_BANK.items()
     ]
 
 
 def get_questions(activity_type: str, level: int = 1):
-    """Retorna questões para um tipo de atividade e nível específico."""
+    """Retorna questões para um tipo de atividade e nível específico.
+
+    Um nível acima do máximo usa o nível mais alto disponível (não volta ao 1).
+    """
     activity = ACTIVITY_BANK.get(activity_type)
     if not activity:
         return []
     levels = activity.get("levels", {})
-    return levels.get(level, levels.get(1, []))
+    level = max(1, min(level, max(levels)))
+    return levels.get(level, [])

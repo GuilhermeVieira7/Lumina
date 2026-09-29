@@ -9,6 +9,7 @@ from database import get_db
 from models import User, Profile, Settings
 from schemas import SettingsUpdate, SettingsResponse
 from auth import get_current_user
+from permissions import get_profile_for
 
 router = APIRouter(prefix="/api/settings", tags=["Configurações"])
 
@@ -20,11 +21,7 @@ def get_settings(
     db: DBSession = Depends(get_db),
 ):
     """Obter configurações de um perfil."""
-    profile = db.query(Profile).filter(
-        Profile.id == profile_id, Profile.user_id == current_user.id
-    ).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Perfil não encontrado")
+    profile = get_profile_for(db, profile_id, current_user)
 
     settings = db.query(Settings).filter(Settings.profile_id == profile_id).first()
     if not settings:
@@ -45,11 +42,7 @@ def update_settings(
     db: DBSession = Depends(get_db),
 ):
     """Atualizar configurações de um perfil."""
-    profile = db.query(Profile).filter(
-        Profile.id == profile_id, Profile.user_id == current_user.id
-    ).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Perfil não encontrado")
+    profile = get_profile_for(db, profile_id, current_user)
 
     settings = db.query(Settings).filter(Settings.profile_id == profile_id).first()
     if not settings:

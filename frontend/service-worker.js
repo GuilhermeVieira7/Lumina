@@ -1,15 +1,20 @@
-const CACHE_NAME = 'sistema-tea-v2.1';
+const CACHE_NAME = 'lumina-v3';
 const STATIC_ASSETS = [
     '/',
     '/css/style.css',
     '/js/api.js',
-    '/js/auth.js',
-    '/js/app.js',
-    '/js/activities.js',
-    '/js/admin.js',
+    '/js/ui.js',
     '/js/sound.js',
     '/js/theme.js',
-    '/js/i18n.js',
+    '/js/auth.js',
+    '/js/child.js',
+    '/js/activities.js',
+    '/js/admin.js',
+    '/js/app.js',
+    '/js/vendor/chart.umd.js',
+    '/img/mascot/fox_idle.png',
+    '/img/mascot/fox_happy.png',
+    '/img/mascot/fox_sad.png',
     '/manifest.json',
 ];
 
@@ -31,26 +36,19 @@ self.addEventListener('activate', event => {
     self.clients.claim();
 });
 
-// Fetch: Network first for API, Cache first for static
+// Fetch: rede primeiro (versão nova sempre que houver conexão), cache como reserva offline
 self.addEventListener('fetch', event => {
-    if (event.request.url.includes('/api/')) {
-        // Network first for API calls
-        event.respondWith(
-            fetch(event.request)
-                .catch(() => caches.match(event.request))
-        );
-    } else {
-        // Cache first for static assets
-        event.respondWith(
-            caches.match(event.request).then(cached => {
-                return cached || fetch(event.request).then(response => {
-                    if (response.status === 200) {
-                        const clone = response.clone();
-                        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-                    }
-                    return response;
-                });
-            }).catch(() => caches.match('/'))
-        );
-    }
+    if (event.request.method !== 'GET') return;
+    const isApi = event.request.url.includes('/api/');
+    event.respondWith(
+        fetch(event.request)
+            .then(response => {
+                if (!isApi && response.status === 200 && event.request.url.startsWith(self.location.origin)) {
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+                }
+                return response;
+            })
+            .catch(() => caches.match(event.request).then(cached => cached || (isApi ? Response.error() : caches.match('/'))))
+    );
 });
