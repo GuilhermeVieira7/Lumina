@@ -48,7 +48,7 @@ MOOD_OPTIONS = [
     {"key": "triste", "icon": "😢", "label": "Triste", "phrase": "Eu estou triste", "color": "#5B8DEF", "hard": True},
     {"key": "bravo", "icon": "😠", "label": "Bravo", "phrase": "Eu estou bravo", "color": "#E5604D", "hard": True},
     {"key": "medo", "icon": "😨", "label": "Com medo", "phrase": "Eu estou com medo", "color": "#9B7FD1", "hard": True},
-    {"key": "cansado", "icon": "😴", "label": "Cansado", "phrase": "Eu estou cansado", "color": "#8C939D", "hard": True},
+    {"key": "cansado", "icon": "🥱", "label": "Cansado", "phrase": "Eu estou cansado", "color": "#8C939D", "hard": True},
 ]
 
 MOODS_BY_KEY = {m["key"]: m for m in MOOD_OPTIONS}
