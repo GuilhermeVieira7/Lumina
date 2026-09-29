@@ -10,8 +10,22 @@ from database import get_db
 from models import User, Profile, Settings
 from schemas import ProfileCreate, ProfileUpdate, ProfileResponse
 from auth import get_current_user
+from permissions import accessible_profiles, get_profile_for, is_owner
 
 router = APIRouter(prefix="/api/profiles", tags=["Perfis"])
+
+EDITABLE_FIELDS = ("name", "avatar", "birth_date", "interests", "sensory_notes", "communication")
+
+
+def to_response(db: DBSession, profile: Profile, user: User) -> ProfileResponse:
+    owner = is_owner(profile, user)
+    owner_name = None
+    if not owner:
+        owner_user = db.query(User).filter(User.id == profile.user_id).first()
+        owner_name = owner_user.username if owner_user else None
+    data = ProfileResponse.model_validate(profile, from_attributes=True).model_dump()
+    data.update(is_owner=owner, owner_name=owner_name)
+    return ProfileResponse(**data)
 
 
 @router.get("", response_model=List[ProfileResponse])
@@ -19,9 +33,8 @@ def list_profiles(
     current_user: User = Depends(get_current_user),
     db: DBSession = Depends(get_db),
 ):
-    """Listar perfis do usuário logado."""
-    profiles = db.query(Profile).filter(Profile.user_id == current_user.id).all()
-    return profiles
+    """Perfis do responsável e perfis compartilhados com o profissional logado."""
+    return [to_response(db, p, current_user) for p in accessible_profiles(db, current_user)]
 
 
 @router.post("", response_model=ProfileResponse)
@@ -30,24 +43,15 @@ def create_profile(
     current_user: User = Depends(get_current_user),
     db: DBSession = Depends(get_db),
 ):
-    """Criar novo perfil de criança."""
-    profile = Profile(
-        user_id=current_user.id,
-        name=profile_data.name,
-        avatar=profile_data.avatar,
-        birth_date=profile_data.birth_date,
-        diagnosis=profile_data.diagnosis,
-    )
+    """Criar novo perfil de criança (sem diagnóstico: só dados para personalização)."""
+    profile = Profile(user_id=current_user.id, **profile_data.model_dump())
     db.add(profile)
     db.commit()
     db.refresh(profile)
 
-    # Criar configurações padrão para o perfil
-    settings = Settings(profile_id=profile.id)
-    db.add(settings)
+    db.add(Settings(profile_id=profile.id))
     db.commit()
-
-    return profile
+    return to_response(db, profile, current_user)
 
 
 @router.put("/{profile_id}", response_model=ProfileResponse)
@@ -57,25 +61,14 @@ def update_profile(
     current_user: User = Depends(get_current_user),
     db: DBSession = Depends(get_db),
 ):
-    """Atualizar perfil existente."""
-    profile = db.query(Profile).filter(
-        Profile.id == profile_id, Profile.user_id == current_user.id
-    ).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Perfil não encontrado")
-
-    if profile_data.name is not None:
-        profile.name = profile_data.name
-    if profile_data.avatar is not None:
-        profile.avatar = profile_data.avatar
-    if profile_data.birth_date is not None:
-        profile.birth_date = profile_data.birth_date
-    if profile_data.diagnosis is not None:
-        profile.diagnosis = profile_data.diagnosis
-
+    """Atualizar perfil (somente o responsável)."""
+    profile = get_profile_for(db, profile_id, current_user, manage=True)
+    for field, value in profile_data.model_dump(exclude_unset=True).items():
+        if field in EDITABLE_FIELDS and (value is not None or field != "name"):
+            setattr(profile, field, value)
     db.commit()
     db.refresh(profile)
-    return profile
+    return to_response(db, profile, current_user)
 
 
 @router.delete("/{profile_id}")
@@ -84,18 +77,8 @@ def delete_profile(
     current_user: User = Depends(get_current_user),
     db: DBSession = Depends(get_db),
 ):
-    """Deletar perfil e todos os dados associados."""
-    profile = db.query(Profile).filter(
-        Profile.id == profile_id, Profile.user_id == current_user.id
-    ).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Perfil não encontrado")
-
-    # Verificar se é o último perfil
-    count = db.query(Profile).filter(Profile.user_id == current_user.id).count()
-    if count <= 1:
-        raise HTTPException(status_code=400, detail="Você precisa ter pelo menos um perfil")
-
+    """Excluir o perfil e todos os dados da criança (LGPD, RNF06)."""
+    profile = get_profile_for(db, profile_id, current_user, manage=True)
     db.delete(profile)
     db.commit()
-    return {"message": "Perfil deletado com sucesso"}
+    return {"message": "Perfil e dados da criança excluídos"}

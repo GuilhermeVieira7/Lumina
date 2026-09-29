@@ -11,6 +11,7 @@ from database import get_db
 from models import User, Profile, Session, Achievement
 from schemas import AchievementResponse, AchievementCheckResponse
 from auth import get_current_user
+from permissions import get_profile_for
 from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/api/achievements", tags=["Conquistas"])
@@ -59,11 +60,7 @@ def get_achievements(
     db: DBSession = Depends(get_db),
 ):
     """Listar todas as conquistas (desbloqueadas e bloqueadas)."""
-    profile = db.query(Profile).filter(
-        Profile.id == profile_id, Profile.user_id == current_user.id
-    ).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Perfil não encontrado")
+    profile = get_profile_for(db, profile_id, current_user)
 
     unlocked = db.query(Achievement).filter(Achievement.profile_id == profile_id).all()
     unlocked_ids = {a.badge_id: a.unlocked_at for a in unlocked}
@@ -88,11 +85,7 @@ def check_achievements(
     db: DBSession = Depends(get_db),
 ):
     """Verificar e desbloquear novas conquistas."""
-    profile = db.query(Profile).filter(
-        Profile.id == profile_id, Profile.user_id == current_user.id
-    ).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Perfil não encontrado")
+    profile = get_profile_for(db, profile_id, current_user)
 
     unlocked = db.query(Achievement).filter(Achievement.profile_id == profile_id).all()
     unlocked_ids = set(a.badge_id for a in unlocked)

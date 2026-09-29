@@ -17,14 +17,18 @@ load_dotenv()
 # Adicionar diretorio backend ao path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from database import engine, SessionLocal, Base
-from models import User, Profile, Session, Response, Settings, Achievement, Goal, Note
+from database import engine, SessionLocal, Base, ensure_columns
+import models  # noqa: F401  (registra todas as tabelas no Base)
 from auth import create_demo_user
 
-from routers import auth, profiles, activities, sessions, recommendations, achievements, goals, settings
+from routers import (
+    auth, profiles, activities, sessions, recommendations, achievements, goals, settings,
+    notes, routine, plans, access,
+)
 
 # ---- Criar tabelas ----
 Base.metadata.create_all(bind=engine)
+ensure_columns()
 
 
 # ---- Lifespan ----
@@ -75,6 +79,10 @@ app.include_router(recommendations.router)
 app.include_router(achievements.router)
 app.include_router(goals.router)
 app.include_router(settings.router)
+app.include_router(notes.router)
+app.include_router(routine.router)
+app.include_router(plans.router)
+app.include_router(access.router)
 
 # ---- Servir Frontend Estatico ----
 frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")

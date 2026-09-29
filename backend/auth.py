@@ -73,29 +73,47 @@ async def get_current_user(
     return user
 
 
-from models import User, Profile
+from models import User, Profile, ProfileAccess
+
+DEMO_THERAPIST = "terapeuta"
+
 
 def create_demo_user(db: DBSession):
-    """Criar usuário demo se não existir."""
-    existing = db.query(User).filter(User.username == "admin").first()
-    if not existing:
+    """Criar contas de demonstração se não existirem.
+
+    - admin / admin1234: responsável, com o perfil "Aluno Demo"
+    - terapeuta / terapeuta1234: profissional com acesso autorizado ao "Aluno Demo"
+    """
+    demo_user = db.query(User).filter(User.username == "admin").first()
+    if not demo_user:
         demo_user = User(
             username="admin",
             email="admin@tea-system.com",
             password_hash=hash_password("admin1234"),
-            role="admin"
+            role="admin",
+            consent_at=datetime.utcnow(),
         )
         db.add(demo_user)
         db.commit()
         db.refresh(demo_user)
-        
-        # Create a default profile
-        demo_profile = Profile(
-            user_id=demo_user.id,
-            name="Aluno Demo",
-            avatar="😊"
-        )
-        db.add(demo_profile)
+        db.add(Profile(user_id=demo_user.id, name="Aluno Demo", avatar="😊", interests="animais, números, música"))
         db.commit()
-        
         print("[AUTH] Usuario demo criado: admin / admin1234 com Perfil Padrão")
+
+    therapist = db.query(User).filter(User.username == DEMO_THERAPIST).first()
+    if not therapist:
+        therapist = User(
+            username=DEMO_THERAPIST,
+            email="terapeuta@tea-system.com",
+            password_hash=hash_password("terapeuta1234"),
+            role="therapist",
+            consent_at=datetime.utcnow(),
+        )
+        db.add(therapist)
+        db.commit()
+        db.refresh(therapist)
+        demo_profile = db.query(Profile).filter(Profile.user_id == demo_user.id).first()
+        if demo_profile:
+            db.add(ProfileAccess(profile_id=demo_profile.id, professional_id=therapist.id, status="active"))
+            db.commit()
+        print("[AUTH] Profissional demo criado: terapeuta / terapeuta1234")

@@ -49,24 +49,26 @@ python3 -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 
 ## 🖥 3. Acessando a Interface
 
-Deixe o terminal rodando em segundo plano e acesse nosecteu navegador favorito (de preferência o Chrome):
+Deixe o terminal rodando em segundo plano e acesse seu navegador favorito (de preferência o Chrome):
 
 👉 **URL de Acesso do Sistema:** [http://127.0.0.1:8000](http://127.0.0.1:8000)
 👉 **URL da Documentação REST API Dinâmica:** [http://127.0.0.1:8000/api/docs](http://127.0.0.1:8000/api/docs)
 
-**Credenciais de Acesso (Conta de Teste Automatizada):**
-- **Usuário:** admin
-- **Senha:** admin1234
+**Contas de demonstração (criadas automaticamente):**
+- **Responsável:** `admin` / `admin1234` (dono do perfil "Aluno Demo")
+- **Profissional:** `terapeuta` / `terapeuta1234` (já autorizado a acompanhar o "Aluno Demo")
 
 ---
 
-## 🧠 O Que Avaliar? (Dicas de Arquitetura)
+## 🧠 O Que Avaliar? (roteiro sugerido)
 
-O sistema foi preparado sob o viés de produto real contendo as seguintes capacidades técnicas:
+1. **Entrar como responsável** (`admin`), escolher o "Aluno Demo" e abrir o **Painel dos Adultos** (pede a senha da conta).
+2. Em **Rotina**, clicar em "Usar rotina de exemplo". Em **Atividades**, escolher o que aparece para a criança, o nível e o número de etapas, e destacar uma atividade com ⭐.
+3. Clicar em **Área da Criança**: cartões grandes com pictogramas, quadro "Agora / Depois" da rotina, atividade em modo de foco com trilha de etapas (TEACCH), dica visual depois de dois erros (ensino sem erro, ABA) e tela "Terminou!". Para sair da área da criança é preciso a senha de um adulto.
+4. Voltar ao painel: **Progresso** (por área de habilidade e período), **Sessões** (registrar o nível de ajuda), **Recomendações** (aceitar, ajustar ou descartar, cada uma com os motivos), **Diário**, **Metas** e **Relatório PDF**.
+5. **Entrar como profissional** (`terapeuta`): ele vê o "Aluno Demo" compartilhado, pode registrar observações e metas, mas não edita o perfil. Como responsável, em **Perfil e acesso**, revogar o acesso e confirmar que o profissional deixa de ver a criança.
+6. **Recomendação explicável:** `backend/ai_engine.py` usa regras explícitas (critério de domínio configurável e dificuldade recorrente) e uma pontuação por interesses, metas, desempenho e variedade. Nada muda para a criança sem a decisão de um adulto.
+7. **Testes automatizados:** `pip install -r requirements-dev.txt` e depois `pytest` na raiz do projeto.
+8. **Deploy:** Dockerfile e docker-compose para PostgreSQL. Bancos SQLite criados por versões anteriores recebem as colunas novas automaticamente ao iniciar.
 
-1. **UX em Neurociência:** Layout interativo construído sob as diretrizes TEACCH. Todas as cores, símbolos e disposições foram limitadas para prevenir sobrecargas.
-2. **Motor Adaptativo Preditivo (Machine Learning):** Se acessarem o código fonte (`backend/ai_engine.py`), notarão que a dificuldade se auto-regula treinada sob um modelo `RandomForestClassifier` lendo taxa de tentativas, falhas sucessivas e tempo de reposta em milissegundos para gerar análises impulsivas ou reflexivas dos estudantes.
-3. **Gerador de Laudos (FPDF2 Clínico):** Para o professor verificar na prática, abra o painel administrativo através do login e na Aba "Exportar", realize o download dinâmico em PDF compilado no Back-End.
-4. **Deploy Ready:** Na raiz, já constam toda estruturação de Docker, Arquivo Docker-Compose para Deploy em Azure Cloud e conectores PostgreSQL prontos (o sistema migra automaticamente do SQLite de testes para PostgreSQL se rodado no Docker).
-
-Qualquer dúvida ou falha ao startar na máquina, limpe o cache do pip (`pip cache purge`) ou crie um virtual env (`python -m venv venv`). Bom uso e avaliação!
+Qualquer dúvida ou falha ao iniciar, crie um ambiente virtual (`python -m venv venv`) e reinstale as dependências. Bom uso e avaliação!

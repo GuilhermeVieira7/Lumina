@@ -3,359 +3,435 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Sistema de apoio educacional para crianças com TEA - Fundamentado em ABA, TEACCH e educação inclusiva">
-    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="Lumina: apoio educacional para crianças com TEA, com atividades visuais, rotina e acompanhamento compartilhado">
+    <meta name="theme-color" content="#4d74c9">
     <title>Lumina — Apoio Educacional</title>
     <link rel="manifest" href="/manifest.json">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="icon" href="/img/mascot/fox_idle.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
+    <script src="/js/vendor/chart.umd.js" defer></script>
 </head>
 <body>
 
-    <!-- ====== TELA: LOGIN ====== -->
-    <div id="login-screen" class="screen active">
-        <div class="container">
-            <div class="glass-card login-card">
-                <div class="logo-badge">🎓</div>
-                <h1 class="main-title" data-i18n="welcome">🌟 Bem-vindo ao Lumina</h1>
-                <p class="subtitle" data-i18n="subtitle">Sistema de Apoio Educacional para Crianças com TEA</p>
-                <form id="login-form" onsubmit="AuthController.login(event)">
-                    <div class="form-group">
-                        <label for="login-username" data-i18n="username">Usuário</label>
-                        <input type="text" id="login-username" required autocomplete="username" placeholder="admin">
+<!-- ============ LOGIN ============ -->
+<section id="login-screen" class="screen center-screen active" aria-labelledby="login-title">
+    <div class="wrap-narrow">
+        <div class="card">
+            <div class="brand">
+                <img src="/img/mascot/fox_idle.png" alt="Raposa Lumi, a mascote do Lumina">
+                <h1 id="login-title">Lumina</h1>
+                <p>Apoio educacional para crianças com TEA</p>
+            </div>
+            <form id="login-form">
+                <div class="field">
+                    <label for="login-username">Usuário</label>
+                    <input id="login-username" autocomplete="username" required>
+                </div>
+                <div class="field">
+                    <label for="login-password">Senha</label>
+                    <input id="login-password" type="password" autocomplete="current-password" required>
+                </div>
+                <button class="btn btn-block" type="submit"><span class="ico" aria-hidden="true">🔑</span> Entrar</button>
+            </form>
+            <button class="btn btn-soft btn-block" style="margin-top:12px" data-go="register-screen">
+                <span class="ico" aria-hidden="true">✨</span> Criar conta
+            </button>
+            <p id="demo-hint" class="demo-hint hidden">
+                Demonstração: responsável <b>admin</b> / <b>admin1234</b> · profissional <b>terapeuta</b> / <b>terapeuta1234</b>
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- ============ CADASTRO ============ -->
+<section id="register-screen" class="screen center-screen" aria-labelledby="register-title">
+    <div class="wrap-narrow">
+        <div class="card">
+            <button class="link-btn" data-go="login-screen">← Voltar</button>
+            <h1 id="register-title" style="font-size:1.6rem;margin:6px 0 16px">Criar conta</h1>
+            <form id="register-form">
+                <div class="field">
+                    <span class="label">Quem é você?</span>
+                    <div class="role-picker">
+                        <label class="role-option"><input type="radio" name="role" value="parent" checked>
+                            <span><span class="ico" aria-hidden="true">👨‍👩‍👧</span>Responsável</span></label>
+                        <label class="role-option"><input type="radio" name="role" value="therapist">
+                            <span><span class="ico" aria-hidden="true">🧑‍🏫</span>Profissional<br><small>professor ou terapeuta</small></span></label>
                     </div>
-                    <div class="form-group">
-                        <label for="login-password" data-i18n="password">Senha</label>
-                        <input type="password" id="login-password" required autocomplete="current-password" placeholder="admin1234">
-                    </div>
-                    <button type="submit" class="btn-primary btn-full" data-i18n="login">Entrar</button>
-                </form>
-                <div class="divider"><span>ou</span></div>
-                <button class="btn-outline btn-full" onclick="AuthController.showRegister()" data-i18n="register">Criar Conta</button>
-                <p class="help-text">Demo: <strong>admin</strong> / <strong>admin1234</strong></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- ====== TELA: REGISTRO ====== -->
-    <div id="register-screen" class="screen">
-        <div class="container">
-            <div class="glass-card login-card">
-                <button class="back-btn" onclick="AuthController.showLogin()">← Voltar</button>
-                <h2 class="card-title" data-i18n="register">Criar Conta</h2>
-                <form id="register-form" onsubmit="AuthController.register(event)">
-                    <div class="form-group">
-                        <label for="register-username">Usuário *</label>
-                        <input type="text" id="register-username" required minlength="3" placeholder="Seu nome de usuário">
-                    </div>
-                    <div class="form-group">
-                        <label for="register-email">Email</label>
-                        <input type="email" id="register-email" placeholder="seu@email.com">
-                    </div>
-                    <div class="form-group">
-                        <label for="register-password">Senha *</label>
-                        <input type="password" id="register-password" required minlength="4" placeholder="Mínimo 4 caracteres">
-                    </div>
-                    <div class="form-group">
-                        <label for="register-confirm">Confirmar Senha *</label>
-                        <input type="password" id="register-confirm" required placeholder="Repita a senha">
-                    </div>
-                    <button type="submit" class="btn-primary btn-full">Criar Conta</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- ====== TELA: SELEÇÃO (Criança / Pais) ====== -->
-    <div id="select-screen" class="screen">
-        <div class="container">
-            <div class="glass-card welcome-card">
-                <h1 class="main-title" data-i18n="welcome">🌟 Bem-vindo ao Aprendizado Especial</h1>
-                <p class="subtitle" data-i18n="subtitle">Sistema de Apoio Educacional para Crianças com TEA</p>
-                <div class="login-options">
-                    <button class="login-btn child-btn" onclick="AppController.enterChildArea()">
-                        <span class="btn-icon">🎨</span>
-                        <span data-i18n="childArea">Área da Criança</span>
-                    </button>
-                    <button class="login-btn parent-btn" onclick="AppController.enterAdminArea()">
-                        <span class="btn-icon">👨‍👩‍👧</span>
-                        <span data-i18n="parentArea">Área dos Pais/Responsáveis</span>
-                    </button>
                 </div>
-                <button class="btn-text" onclick="AuthController.logout()" style="margin-top:20px;">🏠 Sair da conta</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ====== TELA: MENU DA CRIANÇA ====== -->
-    <div id="child-menu-screen" class="screen">
-        <div class="container">
-            <div class="child-header">
-                <div class="child-header-left">
-                    <div id="user-avatar" class="user-avatar">😊</div>
-                    <h1 class="child-title">🎈 Olá! Vamos Aprender?</h1>
+                <div class="field">
+                    <label for="register-username">Usuário</label>
+                    <input id="register-username" required minlength="3" maxlength="50" autocomplete="username">
                 </div>
-                <div class="header-controls">
-                    <button class="icon-btn" title="Temas" onclick="AppController.openModal('themes-modal')">🎨</button>
-                    <button class="icon-btn" title="Idioma" onclick="AppController.openModal('language-modal')">🌍</button>
-                    <button class="exit-btn" onclick="AppController.showScreen('select-screen')">🏠 Sair</button>
+                <div class="field">
+                    <label for="register-email">Email (opcional)</label>
+                    <input id="register-email" type="email" autocomplete="email">
+                    <p class="hint">Profissionais podem ser convidados pelo email.</p>
                 </div>
-            </div>
-
-            <div class="guided-choice-container" style="text-align: center; margin-top: 20px;">
-                <h2 style="color: var(--text-secondary); margin-bottom: 25px; font-weight: 500;">Qual atividade vamos fazer agora? 🤔</h2>
-                
-                <div class="activities-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); max-width: 800px; margin: 0 auto;">
-                    
-                    <button class="activity-card color-activity" onclick="ActivityController.startActivity('colors')">
-                        <span class="activity-icon">🎨</span><span class="activity-name">Cores</span>
-                    </button>
-                    
-                    <button class="activity-card shape-activity" onclick="ActivityController.startActivity('shapes')">
-                        <span class="activity-icon">⭐</span><span class="activity-name">Formas</span>
-                    </button>
-
-                    <button class="activity-card number-activity" style="position: relative; border: 3px solid var(--success); box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);" onclick="ActivityController.startActivity('numbers')">
-                        <div class="recommended-badge" style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; white-space: nowrap; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">⭐ Recomendado</div>
-                        <span class="activity-icon">🔢</span><span class="activity-name">Números</span>
-                    </button>
-
-                    <button class="activity-card emotion-activity" onclick="ActivityController.startActivity('emotions')">
-                        <span class="activity-icon">😊</span><span class="activity-name">Emoções</span>
-                    </button>
-
-                    <button class="activity-card letter-activity" onclick="ActivityController.startActivity('letters')">
-                        <span class="activity-icon">🔤</span><span class="activity-name">Letras</span>
-                    </button>
-
-                    <button class="activity-card practice-activity" onclick="ActivityController.startActivity('colors', true)">
-                        <span class="activity-icon">🎮</span><span class="activity-name">Treino Livre</span>
-                    </button>
-
+                <div class="field">
+                    <label for="register-password">Senha</label>
+                    <input id="register-password" type="password" required minlength="6" autocomplete="new-password">
+                    <p class="hint">Mínimo de 6 caracteres. Ela também protege o Painel dos Adultos.</p>
                 </div>
-            </div>
-
-            <div class="progress-summary" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color);">
-                <button class="progress-btn" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: white; padding: 15px 30px; border-radius: var(--radius-md); font-size: 1.1rem; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 165, 0, 0.3);" onclick="AppController.showChildProgress()">
-                    🌟 Ver Minhas Conquistas
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ====== TELA: ATIVIDADE ====== -->
-    <div id="activity-screen" class="screen">
-        <div class="activity-container glass-card">
-            <div class="activity-header">
-                <div class="activity-info">
-                    <h2 id="activity-title" class="activity-title"></h2>
-                    <div id="activity-level" class="activity-level"></div>
+                <div class="field">
+                    <label for="register-confirm">Repita a senha</label>
+                    <input id="register-confirm" type="password" required autocomplete="new-password">
                 </div>
-                <button class="exit-activity-btn" onclick="ActivityController.exitActivity()">✕ Sair</button>
-            </div>
-            <div class="activity-progress">
-                <div id="activity-progress-bar" class="progress-bar-fill"></div>
-                <span id="activity-progress-text" class="progress-text">0/10</span>
-            </div>
-            <div class="activity-content" style="position: relative;">
-                <div id="activity-question" class="question-text"></div>
-                <div id="activity-options" class="options-container"></div>
-                <!-- Mascote emoji simples -->
-                <div id="mascot-container" class="mascot-idle" style="position: absolute; bottom: -20px; left: 10px; font-size: 5rem; transition: transform 0.3s; transform-origin: bottom center; user-select: none;">🦊</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bolha de fala do mascote -->
-    <div id="mascot-speech-bubble" class="mascot-bubble"></div>
-
-    <!-- ====== TELA: RECOMPENSA ====== -->
-    <div id="reward-screen" class="screen">
-        <div class="container">
-            <div class="glass-card reward-content">
-                <div class="celebration">🎉</div>
-                <h2 class="reward-title" data-i18n="congratulations">Parabéns!</h2>
-                <p id="reward-message" class="reward-message"></p>
-                <div id="stars-earned" class="stars-display"></div>
-                <button class="btn-primary btn-lg" onclick="ActivityController.continueFromReward()" data-i18n="continue">Continuar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ====== TELA: PROGRESSO DA CRIANÇA ====== -->
-    <div id="child-progress-screen" class="screen">
-        <div class="container">
-            <button class="back-btn" onclick="AppController.showScreen('child-menu-screen')">← Voltar</button>
-            <h2 class="section-title" data-i18n="myAchievements">🌟 Minhas Conquistas</h2>
-            <div class="total-stars glass-card">
-                <span class="star-icon">⭐</span>
-                <span id="total-stars-count" class="star-count">0</span>
-                <span class="star-label" data-i18n="starsEarned">estrelas conquistadas!</span>
-            </div>
-            <div id="skills-progress" class="skills-grid"></div>
-        </div>
-    </div>
-
-    <!-- ====== TELA: PAINEL ADMINISTRATIVO ====== -->
-    <div id="admin-panel-screen" class="screen">
-        <div class="admin-container glass-card">
-            <div class="admin-header">
-                <h1 class="admin-title">📊 Painel Administrativo</h1>
-                <button class="exit-btn" onclick="AppController.showScreen('select-screen')">← Voltar</button>
-            </div>
-            <div class="admin-tabs">
-                <button class="tab-btn active" onclick="AdminController.showTab('dashboard')">📊 Dashboard</button>
-                <button class="tab-btn" onclick="AdminController.showTab('detailed')">📈 Análise Detalhada</button>
-                <button class="tab-btn" onclick="AdminController.showTab('recommendations')">💡 Recomendações IA</button>
-                <button class="tab-btn" onclick="AppController.openModal('profiles-modal'); ProfileController.renderAdminProfiles()">👥 Perfis</button>
-                <button class="tab-btn" onclick="AdminController.exportData()">📥 Exportar</button>
-                <button class="tab-btn" onclick="AdminController.shareWhatsApp()">📱 Compartilhar no WhatsApp</button>
-            </div>
-
-            <div id="tab-dashboard" class="tab-content active">
-                <div class="stats-grid">
-                    <div class="stat-card"><div class="stat-label">Total de Atividades</div><div id="stat-total-activities" class="stat-value">0</div></div>
-                    <div class="stat-card"><div class="stat-label">Taxa de Acerto</div><div id="stat-accuracy" class="stat-value">0%</div></div>
-                    <div class="stat-card"><div class="stat-label">Tempo Total</div><div id="stat-total-time" class="stat-value">0h</div></div>
-                    <div class="stat-card"><div class="stat-label">Estrelas</div><div id="stat-stars" class="stat-value">0</div></div>
+                <div class="field">
+                    <label class="check">
+                        <input id="register-consent" type="checkbox" required>
+                        <span>Autorizo o tratamento dos dados da criança somente para fins educacionais, conforme a LGPD.
+                            O Lumina não guarda diagnósticos ou laudos, e eu posso excluir tudo quando quiser.</span>
+                    </label>
                 </div>
-                <div class="charts-grid">
-                    <div class="chart-card"><h3 class="chart-title">Desempenho por Habilidade</h3><div style="position: relative; height: 300px; width: 100%;"><canvas id="skills-chart"></canvas></div></div>
-                    <div class="chart-card"><h3 class="chart-title">Evolução Temporal</h3><div style="position: relative; height: 300px; width: 100%;"><canvas id="timeline-chart"></canvas></div></div>
-                </div>
-            </div>
-
-            <div id="tab-detailed" class="tab-content">
-                <h3 class="section-subtitle">Métricas Detalhadas por Atividade</h3>
-                <div id="detailed-metrics" class="metrics-container"></div>
-            </div>
-
-            <div id="tab-recommendations" class="tab-content">
-                <h3 class="section-subtitle">Recomendações Personalizadas baseadas em IA</h3>
-                <div id="recommendations-container" class="recommendations-list"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ====== MODAL: Feedback ====== -->
-    <div id="feedback-modal" class="modal hidden">
-        <div id="feedback-content" class="feedback-bubble"></div>
-    </div>
-
-    <!-- ====== MODAL: Temas ====== -->
-    <div id="themes-modal" class="modal hidden" onclick="if(event.target===this)AppController.closeModal('themes-modal')">
-        <div class="modal-content glass-card">
-            <h2>🎨 Escolher Tema</h2>
-            <div class="themes-grid">
-                <button class="theme-option" onclick="ThemeController.apply('light');AppController.closeModal('themes-modal')">☀️ Claro</button>
-                <button class="theme-option" onclick="ThemeController.apply('dark');AppController.closeModal('themes-modal')">🌙 Escuro</button>
-                <button class="theme-option" onclick="ThemeController.apply('blue');AppController.closeModal('themes-modal')">🌊 Azul Oceano</button>
-                <button class="theme-option" onclick="ThemeController.apply('green');AppController.closeModal('themes-modal')">🌳 Verde Floresta</button>
-                <button class="theme-option" onclick="ThemeController.apply('purple');AppController.closeModal('themes-modal')">💜 Roxo Místico</button>
-                <button class="theme-option" onclick="ThemeController.apply('highContrast');AppController.closeModal('themes-modal')">⚫ Alto Contraste</button>
-            </div>
-            <div style="margin: 20px 0; text-align: left; background: var(--bg-card); padding: 15px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600;">
-                    <input type="checkbox" id="low-stimulus-checkbox" onchange="AppController.toggleLowStimulus(this.checked)" style="width: 20px; height: 20px;">
-                    Modo Baixo Estímulo (Reduz animações e alivia os sons)
-                </label>
-            </div>
-            <button class="btn-outline" onclick="AppController.closeModal('themes-modal')">Fechar</button>
-        </div>
-    </div>
-
-    <!-- ====== MODAL: Idioma ====== -->
-    <div id="language-modal" class="modal hidden" onclick="if(event.target===this)AppController.closeModal('language-modal')">
-        <div class="modal-content glass-card">
-            <h2>🌍 Escolher Idioma</h2>
-            <div class="language-grid">
-                <button class="language-option" onclick="I18n.setLanguage('pt');AppController.closeModal('language-modal')">🇧🇷 Português</button>
-                <button class="language-option" onclick="I18n.setLanguage('en');AppController.closeModal('language-modal')">🇺🇸 English</button>
-                <button class="language-option" onclick="I18n.setLanguage('es');AppController.closeModal('language-modal')">🇪🇸 Español</button>
-            </div>
-            <button class="btn-outline" onclick="AppController.closeModal('language-modal')">Fechar</button>
-        </div>
-    </div>
-
-    <!-- ====== MODAL: Perfis ====== -->
-    <div id="profiles-modal" class="modal hidden" onclick="if(event.target===this)AppController.closeModal('profiles-modal')">
-        <div class="modal-content glass-card">
-            <h2>👥 Gerenciar Perfis</h2>
-            <div id="profiles-list" class="activities-grid" style="margin-top: 20px;"></div>
-            <div style="margin-top:20px; display:flex; gap:10px; justify-content:center;">
-                <button class="btn-primary" onclick="ProfileController.createNewProfile()">+ Novo Perfil</button>
-                <button class="btn-outline" onclick="AppController.closeModal('profiles-modal')">Fechar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ====== MODAL: Criar Novo Perfil (Estético) ====== -->
-    <div id="create-profile-modal" class="modal hidden" onclick="if(event.target===this)AppController.closeModal('create-profile-modal')">
-        <div class="modal-content glass-card" style="max-width: 480px;">
-            <h2 style="text-align: center; margin-bottom: 5px;">🧒 Novo Perfil</h2>
-            <p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 25px;">Preencha os dados abaixo para cadastrar uma nova criança no sistema.</p>
-            
-            <form onsubmit="ProfileController.saveProfileFromModal(event)">
-                <!-- Nome -->
-                <div style="margin-bottom: 18px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">Nome da Criança *</label>
-                    <input type="text" id="profile-name-input" placeholder="Ex: João Pedro" required
-                           style="width: 100%; padding: 12px 15px; border-radius: var(--radius-sm); border: 2px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 1rem; box-sizing: border-box;">
-                </div>
-                
-                <!-- Avatar -->
-                <div style="margin-bottom: 18px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">Avatar (Emoji)</label>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button type="button" class="avatar-pick" onclick="document.getElementById('profile-avatar-input').value='😊'" style="font-size: 1.8rem; padding: 8px; border: 2px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-card); cursor: pointer;">😊</button>
-                        <button type="button" class="avatar-pick" onclick="document.getElementById('profile-avatar-input').value='🦊'" style="font-size: 1.8rem; padding: 8px; border: 2px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-card); cursor: pointer;">🦊</button>
-                        <button type="button" class="avatar-pick" onclick="document.getElementById('profile-avatar-input').value='🚀'" style="font-size: 1.8rem; padding: 8px; border: 2px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-card); cursor: pointer;">🚀</button>
-                        <button type="button" class="avatar-pick" onclick="document.getElementById('profile-avatar-input').value='🌟'" style="font-size: 1.8rem; padding: 8px; border: 2px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-card); cursor: pointer;">🌟</button>
-                        <button type="button" class="avatar-pick" onclick="document.getElementById('profile-avatar-input').value='🐻'" style="font-size: 1.8rem; padding: 8px; border: 2px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-card); cursor: pointer;">🐻</button>
-                        <button type="button" class="avatar-pick" onclick="document.getElementById('profile-avatar-input').value='🦋'" style="font-size: 1.8rem; padding: 8px; border: 2px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-card); cursor: pointer;">🦋</button>
-                        <button type="button" class="avatar-pick" onclick="document.getElementById('profile-avatar-input').value='🎨'" style="font-size: 1.8rem; padding: 8px; border: 2px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-card); cursor: pointer;">🎨</button>
-                    </div>
-                    <input type="hidden" id="profile-avatar-input" value="😊">
-                </div>
-                
-                <!-- Diagnóstico -->
-                <div style="margin-bottom: 18px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">Condição / Diagnóstico</label>
-                    <select id="profile-diagnosis-input" 
-                            style="width: 100%; padding: 12px 15px; border-radius: var(--radius-sm); border: 2px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 1rem; box-sizing: border-box;">
-                        <option value="">Selecione (opcional)</option>
-                        <option value="TEA">TEA - Transtorno do Espectro Autista</option>
-                        <option value="TDAH">TDAH - Déficit de Atenção e Hiperatividade</option>
-                        <option value="TEA+TDAH">TEA + TDAH</option>
-                        <option value="Dislexia">Dislexia</option>
-                        <option value="Deficiência Intelectual">Deficiência Intelectual</option>
-                        <option value="Desenvolvimento Típico">Desenvolvimento Típico</option>
-                        <option value="Outro">Outro</option>
-                    </select>
-                </div>
-                
-                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 25px;">
-                    <button type="submit" class="btn-primary" style="padding: 12px 30px; font-size: 1rem;">✅ Criar Perfil</button>
-                    <button type="button" class="btn-outline" onclick="AppController.closeModal('create-profile-modal')" style="padding: 12px 30px;">Cancelar</button>
-                </div>
+                <button class="btn btn-block" type="submit"><span class="ico" aria-hidden="true">✅</span> Criar conta</button>
             </form>
         </div>
     </div>
+</section>
 
-    <!-- ====== TOAST ====== -->
-    <div id="toast" class="toast hidden"></div>
+<!-- ============ ESCOLHA DE PERFIL E ÁREA ============ -->
+<section id="select-screen" class="screen" aria-labelledby="select-title">
+    <div class="wrap">
+        <h1 id="select-title" class="select-title">Quem vai usar agora?</h1>
+        <p class="select-sub">Escolha a criança e depois a área.</p>
+        <div id="select-profiles" class="profile-row" role="group" aria-label="Crianças"></div>
+        <div class="area-buttons">
+            <button class="big-choice child" id="enter-child">
+                <span class="ico" aria-hidden="true">🎨</span>
+                <span>Área da Criança<small>Atividades, rotina e conquistas</small></span>
+            </button>
+            <button class="big-choice adult" id="enter-adult">
+                <span class="ico" aria-hidden="true">🔒</span>
+                <span>Painel dos Adultos<small>Pede a senha da conta</small></span>
+            </button>
+        </div>
+        <p style="text-align:center;margin-top:28px">
+            <button class="link-btn" id="logout-btn">🚪 Sair da conta</button>
+        </p>
+    </div>
+</section>
 
-    <!-- ====== SCRIPTS ====== -->
-    <script src="/js/api.js"></script>
-    <script src="/js/auth.js"></script>
-    <script src="/js/sound.js"></script>
-    <script src="/js/theme.js"></script>
-    <script src="/js/i18n.js"></script>
-    <script src="/js/activities.js"></script>
-    <script src="/js/admin.js"></script>
-    <script src="/js/app.js"></script>
+<!-- ============ CRIANÇA: INÍCIO ============ -->
+<section id="child-home" class="screen" aria-labelledby="child-hello">
+    <div class="wrap">
+        <div class="child-top">
+            <div class="child-hello">
+                <div class="avatar" id="child-avatar" aria-hidden="true">😊</div>
+                <h1 id="child-hello">Olá!</h1>
+            </div>
+            <button class="lock-btn" id="child-exit" aria-label="Sair da área da criança (pede a senha de um adulto)">
+                <span aria-hidden="true">🔒</span> Adulto
+            </button>
+        </div>
+
+        <div id="now-next" class="now-next hidden" aria-live="polite"></div>
+
+        <h2 class="section-label"><span aria-hidden="true">🎯</span> O que vamos fazer?</h2>
+        <div id="child-tiles" class="tiles"></div>
+    </div>
+</section>
+
+<!-- ============ CRIANÇA: ATIVIDADE ============ -->
+<section id="activity-screen" class="screen" aria-labelledby="activity-title">
+    <div class="activity-shell">
+        <div class="activity-bar">
+            <div class="activity-name">
+                <span class="pic" id="activity-icon" aria-hidden="true">🎨</span>
+                <span><span id="activity-title">Atividade</span><small id="activity-level">Nível 1</small></span>
+            </div>
+            <button class="lock-btn" id="activity-pause"><span aria-hidden="true">⏸️</span> Pausa</button>
+        </div>
+        <div id="activity-steps" class="steps" aria-hidden="true"></div>
+        <p id="activity-steps-caption" class="steps-caption" aria-live="polite"></p>
+        <div class="card question-card">
+            <div id="activity-question"></div>
+            <div id="activity-options" class="options"></div>
+        </div>
+        <div class="mascot-row">
+            <img id="mascot" src="/img/mascot/fox_idle.png" alt="">
+            <div id="mascot-bubble" class="bubble" role="status" aria-live="polite"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ CRIANÇA: TERMINOU ============ -->
+<section id="finish-screen" class="screen" aria-labelledby="finish-title">
+    <div class="card finish-card">
+        <img src="/img/mascot/fox_happy.png" alt="Raposa feliz">
+        <div class="check-big" aria-hidden="true">✅</div>
+        <h2 id="finish-title">Terminou!</h2>
+        <p id="finish-message"></p>
+        <div id="finish-stars" class="stars"></div>
+        <div id="finish-medal" class="new-medal hidden"></div>
+        <button class="btn btn-success" id="finish-continue" style="min-width:220px">
+            <span class="ico" aria-hidden="true">🏠</span> Voltar ao início
+        </button>
+    </div>
+</section>
+
+<!-- ============ CRIANÇA: ROTINA ============ -->
+<section id="routine-screen" class="screen" aria-labelledby="routine-title">
+    <div class="wrap">
+        <div class="child-top">
+            <h1 id="routine-title" class="section-label" style="font-size:1.8rem"><span aria-hidden="true">📅</span> Minha rotina de hoje</h1>
+            <button class="lock-btn" data-child-home><span aria-hidden="true">🏠</span> Início</button>
+        </div>
+        <p class="select-sub" style="text-align:left">Toque no cartão quando terminar.</p>
+        <div id="routine-cards" class="routine-strip"></div>
+    </div>
+</section>
+
+<!-- ============ CRIANÇA: CONQUISTAS ============ -->
+<section id="progress-screen" class="screen" aria-labelledby="progress-title">
+    <div class="wrap">
+        <div class="child-top">
+            <h1 id="progress-title" class="section-label" style="font-size:1.8rem"><span aria-hidden="true">🌟</span> Minhas conquistas</h1>
+            <button class="lock-btn" data-child-home><span aria-hidden="true">🏠</span> Início</button>
+        </div>
+        <div class="star-total"><span aria-hidden="true">⭐</span><b id="star-total">0</b> estrelas</div>
+        <h2 class="section-label"><span aria-hidden="true">🏅</span> Medalhas</h2>
+        <div id="medals" class="medals"></div>
+        <h2 class="section-label"><span aria-hidden="true">📚</span> Atividades</h2>
+        <div id="skill-cards" class="skill-cards"></div>
+    </div>
+</section>
+
+<!-- ============ PAINEL DOS ADULTOS ============ -->
+<section id="panel-screen" class="screen" aria-labelledby="panel-title">
+    <div class="wrap">
+        <div class="panel-top">
+            <div>
+                <h1 id="panel-title">Painel dos Adultos</h1>
+                <div class="panel-child">
+                    <label for="panel-profile" class="sr-only">Criança</label>
+                    <select id="panel-profile"></select>
+                    <span id="panel-shared" class="shared-note"></span>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="btn btn-soft btn-small" id="panel-child-btn"><span aria-hidden="true">🎨</span> Área da Criança</button>
+                <button class="btn btn-outline btn-small" id="panel-back"><span aria-hidden="true">←</span> Sair do painel</button>
+            </div>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="Seções do painel">
+            <button class="tab" role="tab" data-tab="dashboard" aria-selected="true"><span aria-hidden="true">📊</span> Progresso</button>
+            <button class="tab" role="tab" data-tab="sessions"><span aria-hidden="true">🕒</span> Sessões</button>
+            <button class="tab" role="tab" data-tab="recs"><span aria-hidden="true">💡</span> Recomendações <span id="recs-count" class="pill info hidden"></span></button>
+            <button class="tab" role="tab" data-tab="diary"><span aria-hidden="true">📓</span> Diário</button>
+            <button class="tab" role="tab" data-tab="goals"><span aria-hidden="true">🎯</span> Metas</button>
+            <button class="tab" role="tab" data-tab="plan"><span aria-hidden="true">🧩</span> Atividades</button>
+            <button class="tab" role="tab" data-tab="routine"><span aria-hidden="true">📅</span> Rotina</button>
+            <button class="tab" role="tab" data-tab="profile"><span aria-hidden="true">👤</span> Perfil e acesso</button>
+            <button class="tab" role="tab" data-tab="settings"><span aria-hidden="true">⚙️</span> Ajustes</button>
+        </div>
+
+        <!-- Progresso -->
+        <div class="tab-panel active" id="tab-dashboard" role="tabpanel">
+            <div class="toolbar">
+                <div class="segmented" role="group" aria-label="Período">
+                    <button data-days="7">7 dias</button>
+                    <button data-days="30" aria-pressed="true">30 dias</button>
+                    <button data-days="">Tudo</button>
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    <button class="btn btn-soft btn-small" id="export-pdf"><span aria-hidden="true">📄</span> Relatório PDF</button>
+                    <button class="btn btn-soft btn-small" id="share-whatsapp"><span aria-hidden="true">📱</span> WhatsApp</button>
+                </div>
+            </div>
+            <div class="stats" id="stats"></div>
+            <div class="charts">
+                <div class="card"><h3>Acerto por área de habilidade</h3><div class="chart-box"><canvas id="chart-areas" aria-label="Gráfico de acerto por área"></canvas></div></div>
+                <div class="card"><h3>Evolução no período</h3><div class="chart-box"><canvas id="chart-timeline" aria-label="Gráfico de evolução"></canvas></div></div>
+                <div class="card"><h3>Acerto por atividade</h3><div class="chart-box"><canvas id="chart-activities" aria-label="Gráfico por atividade"></canvas></div></div>
+            </div>
+        </div>
+
+        <!-- Sessões -->
+        <div class="tab-panel" id="tab-sessions" role="tabpanel">
+            <p class="shared-note" style="margin-bottom:12px">Registre quanta ajuda a criança precisou e, se quiser, uma observação sobre a sessão.</p>
+            <div id="sessions-list" class="list"></div>
+        </div>
+
+        <!-- Recomendações -->
+        <div class="tab-panel" id="tab-recs" role="tabpanel">
+            <p class="shared-note" style="margin-bottom:12px">As sugestões seguem regras explícitas e nada muda para a criança até um adulto aceitar.</p>
+            <div id="recs-list" class="list"></div>
+        </div>
+
+        <!-- Diário -->
+        <div class="tab-panel" id="tab-diary" role="tabpanel">
+            <div class="card" style="margin-bottom:16px">
+                <form id="diary-form">
+                    <div class="field">
+                        <label for="diary-text">Nova observação</label>
+                        <textarea id="diary-text" maxlength="2000" placeholder="Ex.: hoje ficou mais calma com a música baixa; pediu ajuda apontando."></textarea>
+                    </div>
+                    <button class="btn" type="submit"><span aria-hidden="true">📝</span> Salvar observação</button>
+                </form>
+            </div>
+            <div id="diary-list" class="list"></div>
+        </div>
+
+        <!-- Metas -->
+        <div class="tab-panel" id="tab-goals" role="tabpanel">
+            <div class="card" style="margin-bottom:16px">
+                <form id="goal-form" class="grid-2" style="align-items:end">
+                    <div class="field"><label for="goal-activity">Atividade</label><select id="goal-activity"></select></div>
+                    <div class="field"><label for="goal-type">Meta</label>
+                        <select id="goal-type">
+                            <option value="accuracy">Acerto médio (%)</option>
+                            <option value="sessions">Quantidade de sessões</option>
+                            <option value="stars">Estrelas</option>
+                        </select></div>
+                    <div class="field"><label for="goal-target">Valor</label><input id="goal-target" type="number" min="1" max="1000" value="80" required></div>
+                    <div class="field"><label for="goal-desc">Descrição (opcional)</label><input id="goal-desc" maxlength="200" placeholder="Ex.: reconhecer as cores primárias"></div>
+                    <button class="btn" type="submit"><span aria-hidden="true">🎯</span> Criar meta</button>
+                </form>
+            </div>
+            <div id="goals-list" class="list"></div>
+        </div>
+
+        <!-- Plano de atividades -->
+        <div class="tab-panel" id="tab-plan" role="tabpanel">
+            <p class="shared-note" style="margin-bottom:12px">Escolha o que aparece para a criança (poucas opções ajudam), o nível e quantas etapas cada atividade tem. A ⭐ destaca a atividade no menu.</p>
+            <div id="plan-list" class="list"></div>
+            <div class="card" style="margin-top:16px">
+                <h3>Critério de domínio</h3>
+                <p class="shared-note" style="margin-bottom:12px">Quando a criança atinge este acerto nas sessões seguidas, o Lumina sugere subir de nível.</p>
+                <form id="mastery-form" class="grid-2" style="align-items:end">
+                    <div class="field"><label for="mastery-threshold">Acerto mínimo (%)</label><input id="mastery-threshold" type="number" min="50" max="100"></div>
+                    <div class="field"><label for="mastery-sessions">Sessões seguidas</label><input id="mastery-sessions" type="number" min="1" max="10"></div>
+                    <button class="btn" type="submit">Salvar critério</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Rotina -->
+        <div class="tab-panel" id="tab-routine" role="tabpanel">
+            <div class="card" style="margin-bottom:16px">
+                <h3>Adicionar etapa da rotina</h3>
+                <form id="routine-form">
+                    <div class="field"><span class="label">Pictograma</span><div id="routine-emoji" class="emoji-grid" role="group" aria-label="Pictograma"></div></div>
+                    <div class="grid-2" style="align-items:end">
+                        <div class="field"><label for="routine-label">Nome</label><input id="routine-label" maxlength="60" required placeholder="Ex.: Escovar os dentes"></div>
+                        <div class="field"><label for="routine-time">Horário (opcional)</label><input id="routine-time" type="time"></div>
+                    </div>
+                    <button class="btn" type="submit"><span aria-hidden="true">➕</span> Adicionar</button>
+                    <button class="btn btn-soft" type="button" id="routine-template"><span aria-hidden="true">📋</span> Usar rotina de exemplo</button>
+                </form>
+            </div>
+            <div id="routine-list" class="list"></div>
+        </div>
+
+        <!-- Perfil e acesso -->
+        <div class="tab-panel" id="tab-profile" role="tabpanel">
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Perfil da criança</h3>
+                    <form id="profile-form"></form>
+                </div>
+                <div class="card" id="access-card">
+                    <h3>Profissionais com acesso</h3>
+                    <p class="shared-note" style="margin-bottom:12px">O profissional precisa ter uma conta do tipo Profissional e aceitar o convite. Você pode revogar a qualquer momento.</p>
+                    <form id="access-form" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+                        <label for="access-who" class="sr-only">Usuário ou email do profissional</label>
+                        <input id="access-who" class="input" style="flex:1;min-width:180px" placeholder="usuário ou email do profissional" required>
+                        <button class="btn" type="submit"><span aria-hidden="true">✉️</span> Convidar</button>
+                    </form>
+                    <div id="access-list" class="list"></div>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+                <button class="btn btn-soft" id="new-profile-btn"><span aria-hidden="true">➕</span> Cadastrar outra criança</button>
+                <button class="btn btn-danger" id="delete-profile-btn"><span aria-hidden="true">🗑️</span> Excluir esta criança e seus dados</button>
+            </div>
+        </div>
+
+        <!-- Ajustes -->
+        <div class="tab-panel" id="tab-settings" role="tabpanel">
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Conforto sensorial da criança</h3>
+                    <div class="switch-row"><label for="set-sound">🔔 Sons de acerto e erro</label><input type="checkbox" id="set-sound"></div>
+                    <div class="switch-row"><label for="set-voice">🗣️ Falar os elogios em voz alta</label><input type="checkbox" id="set-voice"></div>
+                    <div class="switch-row"><label for="set-low">🌙 Modo Baixo Estímulo (sem movimento, menos cor, sons baixos)</label><input type="checkbox" id="set-low"></div>
+                    <div class="switch-row"><label for="set-font">🔠 Letras maiores</label><input type="checkbox" id="set-font"></div>
+                    <div style="margin-top:12px"><span class="label" style="font-weight:700">🎨 Cores</span>
+                        <div class="theme-choices" id="theme-choices" style="margin-top:8px">
+                            <button data-theme-choice="light">☀️ Suave</button>
+                            <button data-theme-choice="green">🌿 Verde</button>
+                            <button data-theme-choice="lilac">💜 Lilás</button>
+                            <button data-theme-choice="dark">🌙 Escuro</button>
+                            <button data-theme-choice="contrast">⚫ Alto contraste</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card" id="invites-card">
+                    <h3>Convites recebidos</h3>
+                    <div id="invites-list" class="list"></div>
+                </div>
+                <div class="card">
+                    <h3>Conta e privacidade</h3>
+                    <p class="shared-note" id="account-info" style="margin-bottom:12px"></p>
+                    <button class="btn btn-danger" id="delete-account-btn"><span aria-hidden="true">🗑️</span> Excluir minha conta e todos os dados</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ MODAL: SENHA DO ADULTO ============ -->
+<div id="password-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="password-title">
+    <div class="card">
+        <h2 id="password-title">🔒 Só para adultos</h2>
+        <p class="shared-note" id="password-reason" style="margin-bottom:12px">Digite a senha da conta para continuar.</p>
+        <form id="password-form">
+            <div class="field">
+                <label for="password-input">Senha</label>
+                <input id="password-input" type="password" autocomplete="current-password" required>
+            </div>
+            <div class="actions">
+                <button class="btn btn-outline" type="button" id="password-cancel">Cancelar</button>
+                <button class="btn" type="submit">Continuar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============ MODAL: PAUSA ============ -->
+<div id="pause-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+    <div class="card">
+        <h2 id="pause-title" style="text-align:center">⏸️ Pausa</h2>
+        <div class="pause-choices">
+            <button class="big-choice child" id="pause-continue"><span class="ico" aria-hidden="true">▶️</span>Continuar</button>
+            <button class="big-choice adult" id="pause-stop"><span class="ico" aria-hidden="true">🏠</span>Parar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ MODAL: NOVA CRIANÇA ============ -->
+<div id="new-profile-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="new-profile-title">
+    <div class="card">
+        <h2 id="new-profile-title">🧒 Nova criança</h2>
+        <form id="new-profile-form"></form>
+    </div>
+</div>
+
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/sound.js"></script>
+<script src="/js/theme.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/child.js"></script>
+<script src="/js/activities.js"></script>
+<script src="/js/admin.js"></script>
+<script src="/js/app.js"></script>
 </body>
 </html>

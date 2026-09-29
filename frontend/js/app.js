@@ -1,138 +1,162 @@
 // ==========================================
-// APP CONTROLLER - Controller Principal
+// APP - Estado da sessão e tela de escolha
 // ==========================================
 
-const AppController = {
-    currentUser: null,
-    currentProfile: null,
-    currentScreen: 'login-screen',
+const App = {
+    user: null,
+    profiles: [],
+    profile: null,
+    settings: null,
+    activities: {},   // metadados das atividades (nome, ícone, área)
 
-    init() {
-        this.lowStimulus = localStorage.getItem('tea_low_stimulus') === 'true';
-        if (this.lowStimulus) {
-            document.body.classList.add('low-stimulus');
-            const checkbox = document.getElementById('low-stimulus-checkbox');
-            if (checkbox) checkbox.checked = true;
-        }
-
-        SoundController.init(this.lowStimulus);
+    async init() {
         ThemeController.init();
-        I18n.init();
-        I18n.updateUI();
+        this._wire();
 
-        // Check if already logged in
-        if (AuthController.checkAuth()) {
-            const savedProfile = localStorage.getItem('tea_profile');
-            if (savedProfile) this.currentProfile = JSON.parse(savedProfile);
-            this.showScreen('select-screen');
-            ProfileController.loadProfiles();
-        } else {
-            this.showScreen('login-screen');
+        const host = window.location.hostname;
+        if (host === 'localhost' || host === '127.0.0.1') {
+            document.getElementById('demo-hint').classList.remove('hidden');
         }
+
+        if (API.token) {
+            try {
+                await this.loadSession();
+                return;
+            } catch {
+                API.clearToken();
+            }
+        }
+        UI.showScreen('login-screen');
     },
 
-    showScreen(screenId) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        const screen = document.getElementById(screenId);
-        if (screen) {
-            screen.classList.add('active');
-            this.currentScreen = screenId;
-        }
+    _wire() {
+        document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => UI.showScreen(b.dataset.go)));
+        document.querySelectorAll('[data-child-home]').forEach(b => b.addEventListener('click', () => Child.home()));
+        document.getElementById('enter-child').addEventListener('click', () => this.enterChild());
+        document.getElementById('enter-adult').addEventListener('click', () => this.enterAdult());
+        document.getElementById('logout-btn').addEventListener('click', () => AuthController.logout());
+        document.getElementById('child-exit').addEventListener('click', () => this.leaveChild());
+        document.getElementById('new-profile-form').addEventListener('submit', e => this.createProfile(e));
+        document.querySelectorAll('.modal').forEach(m => m.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && m.id !== 'password-modal' && m.id !== 'pause-modal') UI.close(m.id);
+        }));
     },
 
-    enterChildArea() {
-        if (!this.currentProfile) {
-            this.showToast('Selecione um perfil primeiro', 'error');
+    async loadSession() {
+        this.user = await API.get('/auth/me');
+        const list = await API.get('/activities');
+        this.activities = Object.fromEntries(list.map(a => [a.type, a]));
+        await this.loadProfiles();
+
+        if (!this.profiles.length && this.user.role !== 'therapist') {
+            UI.showScreen('select-screen');
+            this.openNewProfile(true);
             return;
         }
-        this.showScreen('child-menu-screen');
-        this._updateChildHeader();
+        UI.showScreen('select-screen');
     },
 
-    enterAdminArea() {
-        this.showScreen('admin-panel-screen');
-        AdminController.showTab('dashboard');
+    async loadProfiles() {
+        this.profiles = await API.get('/profiles');
+        const savedId = Number(localStorage.getItem('tea_profile_id'));
+        const chosen = this.profiles.find(p => p.id === savedId) || this.profiles[0] || null;
+        if (chosen) await this.selectProfile(chosen, false);
+        else this.profile = null;
+        this.renderSelect();
     },
 
-    async showChildProgress() {
-        if (!this.currentProfile) return;
-        this.showScreen('child-progress-screen');
+    renderSelect() {
+        const row = document.getElementById('select-profiles');
+        if (!this.profiles.length) {
+            row.innerHTML = this.user && this.user.role === 'therapist'
+                ? UI.empty('✉️', 'Nenhuma criança compartilhada ainda. Os convites aparecem no Painel dos Adultos, em Ajustes.')
+                : UI.empty('🧒', 'Cadastre a primeira criança no Painel dos Adultos.');
+            document.getElementById('enter-child').disabled = true;
+            return;
+        }
+        document.getElementById('enter-child').disabled = false;
+        row.innerHTML = this.profiles.map(p => `
+            <button class="profile-pick" data-profile="${p.id}" aria-pressed="${this.profile && p.id === this.profile.id}">
+                <span class="avatar" aria-hidden="true">${UI.esc(p.avatar)}</span>
+                ${UI.esc(p.name)}
+                ${p.is_owner ? '' : `<small>de ${UI.esc(p.owner_name)}</small>`}
+            </button>`).join('');
+        row.querySelectorAll('[data-profile]').forEach(b => b.addEventListener('click', async () => {
+            await this.selectProfile(this.profiles.find(p => p.id === Number(b.dataset.profile)));
+        }));
+    },
 
+    async selectProfile(profile, rerender = true) {
+        this.profile = profile;
+        localStorage.setItem('tea_profile_id', profile.id);
         try {
-            const stats = await API.get(`/sessions/stats?profile_id=${this.currentProfile.id}`);
-            document.getElementById('total-stars-count').textContent = stats.total_stars;
-
-            const grid = document.getElementById('skills-progress');
-            grid.innerHTML = '';
-
-            Object.entries(stats.activities_breakdown).forEach(([type, data]) => {
-                const card = document.createElement('div');
-                card.className = 'skill-card';
-                card.innerHTML = `
-                    <div class="skill-name">${type}</div>
-                    <div class="skill-stats">
-                        <span>${data.stars} ⭐</span>
-                        <span>${data.accuracy}%</span>
-                    </div>
-                    <div class="skill-progress-bar">
-                        <div class="skill-progress-fill" style="width:${data.accuracy}%"></div>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-
-            if (Object.keys(stats.activities_breakdown).length === 0) {
-                grid.innerHTML = '<p style="text-align:center;color:white;padding:20px;">Comece a praticar para ver seu progresso! 🌟</p>';
-            }
-        } catch {}
+            this.settings = await API.get(`/settings/${profile.id}`);
+        } catch {
+            this.settings = { sound_enabled: true, voice_enabled: false, low_stimulus: false };
+        }
+        this.applySettings();
+        if (rerender) this.renderSelect();
     },
 
-    _updateChildHeader() {
-        const avatar = document.getElementById('user-avatar');
-        if (avatar && this.currentProfile) {
-            avatar.textContent = this.currentProfile.avatar || '😊';
+    applySettings() {
+        const s = this.settings || {};
+        SoundController.configure(s);
+        document.body.classList.toggle('low-stimulus', !!s.low_stimulus);
+    },
+
+    enterChild() {
+        if (!this.profile) {
+            UI.toast('Escolha uma criança primeiro', 'error');
+            return;
+        }
+        Child.home();
+    },
+
+    async enterAdult() {
+        if (await UI.askPassword('O Painel dos Adultos pede a senha da conta.')) Admin.open();
+    },
+
+    async leaveChild() {
+        if (await UI.askPassword('Para sair da área da criança, um adulto digita a senha.')) {
+            this.renderSelect();
+            UI.showScreen('select-screen');
         }
     },
 
-    showToast(message, type = 'info') {
-        const toast = document.getElementById('toast');
-        toast.textContent = message;
-        toast.className = `toast ${type}`;
-        toast.classList.remove('hidden');
-        setTimeout(() => toast.classList.add('hidden'), 3500);
+    openNewProfile(first = false) {
+        const form = document.getElementById('new-profile-form');
+        UI.renderProfileForm(form, null, first ? 'Cadastrar e começar' : 'Cadastrar criança');
+        document.getElementById('new-profile-title').textContent = first ? '🧒 Vamos cadastrar a criança' : '🧒 Nova criança';
+        if (!first) {
+            const cancel = document.createElement('button');
+            cancel.type = 'button';
+            cancel.className = 'btn btn-outline';
+            cancel.textContent = 'Cancelar';
+            cancel.onclick = () => UI.close('new-profile-modal');
+            form.querySelector('.actions').prepend(cancel);
+        }
+        UI.open('new-profile-modal');
     },
 
-    // Modal helpers
-    openModal(id) {
-        document.getElementById(id)?.classList.remove('hidden');
-    },
-    closeModal(id) {
-        document.getElementById(id)?.classList.add('hidden');
-    },
-    
-    toggleLowStimulus(isActive) {
-        this.lowStimulus = isActive;
-        localStorage.setItem('tea_low_stimulus', isActive ? 'true' : 'false');
-        if(isActive) {
-            document.body.classList.add('low-stimulus');
-        } else {
-            document.body.classList.remove('low-stimulus');
+    async createProfile(e) {
+        e.preventDefault();
+        const form = e.target;
+        try {
+            const profile = await API.post('/profiles', UI.readProfileForm(form));
+            UI.close('new-profile-modal');
+            UI.toast(`${profile.name} cadastrado(a)!`, 'success');
+            localStorage.setItem('tea_profile_id', profile.id);
+            await this.loadProfiles();
+            if (document.getElementById('panel-screen').classList.contains('active')) Admin.open('profile');
+        } catch (err) {
+            UI.toast(err.message, 'error');
         }
-        SoundController.setLowStimulus(isActive);
-        this.showToast(isActive ? 'Modo Baixo Estímulo ativado.' : 'Modo Baixo Estímulo desativado.', 'success');
-    }
+    },
 };
 
-// ---- DOM Ready ----
 document.addEventListener('DOMContentLoaded', () => {
-    AppController.init();
-
-    // Register service worker
+    App.init();
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/service-worker.js')
-            .then(r => console.log('[PWA] SW registered'))
-            .catch(e => console.log('[PWA] SW error:', e));
+        navigator.serviceWorker.register('/service-worker.js').catch(() => {});
     }
-
-    console.log('🌟 Sistema TEA v2.0 — Fundamentado em ABA, TEACCH e Educação Inclusiva');
 });
