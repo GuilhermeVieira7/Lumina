@@ -205,7 +205,9 @@ button { cursor: pointer; }
 .photo-field { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .photo-preview { width: 96px; height: 96px; border-radius: 50%; border: 3px solid var(--border); background: var(--bg-soft); display: inline-flex; align-items: center; justify-content: center; font-size: 3rem; overflow: hidden; flex: none; }
 .photo-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.file-btn { cursor: pointer; }
+.file-btn { cursor: pointer; position: relative; }
+/* O campo de arquivo fica escondido dentro do botão (sem ele, a regra ".field input" o esticava para fora da tela) */
+.field .file-btn input[type="file"] { position: absolute; left: 0; top: 0; width: 1px; min-height: 0; height: 1px; padding: 0; border: 0; }
 .file-btn:focus-within { outline: 3px solid var(--primary); outline-offset: 2px; }
 .area-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; max-width: 700px; margin: 0 auto; }
 .big-choice {
@@ -356,7 +358,7 @@ button { cursor: pointer; }
 
 /* ---- Conquistas ---- */
 .star-total { display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 1.3rem; font-weight: 800; margin-bottom: 20px; }
-.star-total b { font-size: 3rem; color: #d99b0f; }
+.star-total b { font-size: 3rem; color: var(--warning); }
 .medals { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-bottom: 28px; }
 .medal { text-align: center; padding: 16px 10px; border-radius: var(--radius); background: var(--card); border: 3px solid var(--border); }
 .medal .pic { font-size: 3rem; }
@@ -381,7 +383,9 @@ button { cursor: pointer; }
 /* ---- Painel dos adultos ---- */
 .panel-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 .panel-top h1 { font-size: 1.6rem; font-weight: 800; }
-.panel-child { display: flex; align-items: center; gap: 10px; }
+.panel-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.panel-child { display: flex; align-items: center; gap: 10px; flex-basis: 100%; min-width: 0; flex-wrap: wrap; }
+.lbl-short { display: none; }
 .panel-child select { min-height: 48px; border-radius: var(--radius-sm); border: 2px solid var(--border); padding: 6px 12px; background: var(--card); font-weight: 700; }
 .shared-note { font-size: .88rem; color: var(--text-soft); }
 
@@ -391,6 +395,14 @@ button { cursor: pointer; }
     border-radius: 999px; border: 2px solid var(--border); background: var(--card); font-weight: 700; color: var(--text-soft);
 }
 .tab[aria-selected="true"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.tab .pill { margin-left: 2px; }
+.subtabs { display: flex; flex-wrap: wrap; gap: 6px; margin: -8px 0 18px; }
+.subtabs button {
+    min-height: 44px; padding: 6px 14px; border-radius: 999px; border: 2px solid transparent;
+    background: transparent; font-weight: 700; color: var(--text-soft);
+}
+.subtabs button:hover { border-color: var(--border); }
+.subtabs button[aria-pressed="true"] { background: var(--primary-soft); color: var(--primary); border-color: var(--primary-soft); }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
@@ -404,6 +416,42 @@ button { cursor: pointer; }
 .stat .pic { font-size: 2.2rem; }
 .stat .label { color: var(--text-soft); font-size: .9rem; font-weight: 700; }
 .stat .value { font-size: 1.7rem; font-weight: 800; }
+
+/* Resumo do período: uma frase e três números */
+.summary-card { margin-bottom: 20px; }
+.summary-card .headline { font-size: 1.15rem; font-weight: 700; line-height: 1.5; margin-bottom: 16px; }
+.big-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.big-num {
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px;
+    background: var(--bg); border-radius: var(--radius-sm); padding: 14px 8px;
+}
+.big-num .pic { font-size: 1.8rem; }
+.big-num b { font-size: 2rem; font-weight: 800; line-height: 1.1; }
+.big-num > span:not(.pic):not(.pill) { color: var(--text-soft); font-weight: 700; font-size: .9rem; }
+.big-num .pill { margin-top: 4px; }
+.summary-extra { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 14px; color: var(--text-soft); font-weight: 700; font-size: .92rem; }
+
+/* Sessões agrupadas por dia */
+.day-group { display: flex; flex-direction: column; gap: 8px; }
+.day-group + .day-group { margin-top: 10px; }
+.day-title { font-size: 1.05rem; font-weight: 800; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.day-meta { font-size: .88rem; font-weight: 700; color: var(--text-soft); }
+.session-item { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.session-item summary {
+    list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 10px 16px; min-height: 56px; border-radius: var(--radius-sm);
+}
+.session-item summary::-webkit-details-marker { display: none; }
+.session-item summary::after { content: "▾"; margin-left: auto; color: var(--text-soft); transition: transform .2s; }
+.session-item[open] summary::after { transform: rotate(180deg); }
+.session-item summary .pic { font-size: 1.6rem; }
+.session-item summary .grow { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.session-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.session-item summary { flex-wrap: nowrap; }
+.session-body { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 10px; }
+.session-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.session-note { display: flex; gap: 10px; flex-wrap: wrap; }
+.session-note textarea { flex: 1; min-width: 200px; }
 
 .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
 .chart-box { position: relative; height: 280px; }
@@ -419,7 +467,7 @@ button { cursor: pointer; }
 .row .pic { font-size: 2rem; }
 .row .grow { flex: 1; min-width: 180px; }
 .row .meta { font-size: .88rem; color: var(--text-soft); }
-.row select, .row input[type="text"], .row input[type="time"] {
+.row select, .session-actions select, .row input[type="text"], .row input[type="time"] {
     min-height: 44px; border-radius: 10px; border: 2px solid var(--border); background: var(--bg-soft); padding: 6px 10px;
 }
 .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem; font-weight: 800; }
@@ -590,7 +638,28 @@ body.low-stimulus .mood-card, body.low-stimulus .mood-said .pic { border-color: 
 
 /* ---- Responsivo ---- */
 @media (max-width: 640px) {
-    .tabs { flex-wrap: nowrap; }
+    /* Cabeçalho do painel compacto: título, ações curtas e fotos rolando na horizontal */
+    .panel-top { gap: 8px; margin-bottom: 10px; }
+    .panel-top h1 { font-size: 1.3rem; }
+    .panel-top { flex-wrap: wrap; }
+    .panel-actions .btn { padding-left: 12px; padding-right: 12px; }
+    .lbl-long { display: none; }
+    .lbl-short { display: inline; }
+    .panel-child .kid-row { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; padding-bottom: 4px; scrollbar-width: thin; }
+    .panel-child .kid-chip { flex-shrink: 0; }
+    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; overflow: visible; }
+    .tab { flex-direction: column; gap: 0; padding: 6px 2px; border-radius: var(--radius-sm); font-size: .85rem; justify-content: center; position: relative; }
+    .tab .tab-ico { font-size: 1.35rem; }
+    .tab .pill { position: absolute; top: -6px; right: -2px; margin: 0; }
+    .subtabs { flex-wrap: nowrap; overflow-x: auto; margin-top: -4px; padding-bottom: 4px; }
+    .subtabs button { flex-shrink: 0; }
+    .big-nums { gap: 8px; }
+    .big-num { padding: 10px 4px; }
+    .big-num b { font-size: 1.45rem; }
+    .big-num .pic { font-size: 1.4rem; }
+    .summary-card .headline { font-size: 1.02rem; }
+    .charts { grid-template-columns: minmax(0, 1fr); }
+    .chart-box { height: 240px; }
     .child-hello h1 { font-size: 1.5rem; }
     .tiles { grid-template-columns: repeat(2, 1fr); }
     .tile { min-height: 150px; }

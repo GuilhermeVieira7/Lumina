@@ -242,157 +242,48 @@ def get_stats(
         "recent_sessions": [],
     }
 
-HELP_LABELS = {"none": "Sem ajuda", "verbal": "Dica verbal", "gesture": "Gesto/apontar", "physical": "Ajuda física"}
-
-
-def _latin1(text) -> str:
-    """As fontes padrão do PDF só aceitam Latin-1; emojis e afins viram '?'."""
-    return str(text).encode("latin-1", "replace").decode("latin-1")
-
-
 @router.get("/export/pdf")
 def export_pdf(
     profile_id: int,
     days: Optional[int] = None,
+    tz: int = 0,
     current_user: User = Depends(get_current_user),
     db: DBSession = Depends(get_db),
 ):
     """Relatório de acompanhamento em PDF (RF12), para compartilhar com escola e equipe."""
     try:
-        from fpdf import FPDF
-        from fpdf.enums import XPos, YPos
+        from report_pdf import build_report
     except ImportError:
         raise HTTPException(status_code=500, detail="Biblioteca fpdf2 não instalada no servidor.")
+    from ai_engine import AIEngine
+    from routers.summary import get_summary
 
     profile = get_profile_for(db, profile_id, current_user)
     stats = get_stats(profile_id=profile_id, days=days, current_user=current_user, db=db)
+    summary = get_summary(profile_id=profile_id, days=days or 7, all_time=not days, tz=tz,
+                          current_user=current_user, db=db)
     notes = (
         db.query(Note).filter(Note.profile_id == profile_id)
-        .order_by(desc(Note.created_at), desc(Note.id)).limit(8).all()
+        .order_by(desc(Note.created_at), desc(Note.id)).limit(6).all()
     )
     refresh_goals(db, profile_id)
     goals = db.query(Goal).filter(Goal.profile_id == profile_id).all()
     request_query = db.query(ChildRequest).filter(ChildRequest.profile_id == profile_id)
+    mood_query = db.query(MoodCheck).filter(MoodCheck.profile_id == profile_id)
     since = _since(days)
     if since:
         request_query = request_query.filter(ChildRequest.created_at >= since)
-    request_summary = summarize(request_query.all())
-    mood_query = db.query(MoodCheck).filter(MoodCheck.profile_id == profile_id)
-    if since:
         mood_query = mood_query.filter(MoodCheck.created_at >= since)
-    mood_summary = summarize_moods(mood_query.all())
 
-    SYSTEM_NAME = "Lumina TEA Edu"
-    NEXT = dict(new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-
-    class PDF(FPDF):
-        def header(self):
-            self.set_font("Helvetica", "B", 18)
-            self.set_text_color(41, 128, 185)
-            self.cell(0, 10, SYSTEM_NAME, align="L", **NEXT)
-            self.set_font("Helvetica", "I", 10)
-            self.set_text_color(128, 128, 128)
-            self.cell(0, 5, _latin1("Relatório de Acompanhamento Educacional"), align="L", **NEXT)
-            self.line(10, 26, 200, 26)
-            self.ln(10)
-
-        def footer(self):
-            self.set_y(-15)
-            self.set_font("Helvetica", "I", 8)
-            self.set_text_color(169, 169, 169)
-            self.cell(0, 10, _latin1(f"Documento confidencial gerado por {SYSTEM_NAME} - Página {self.page_no()}"), align="C")
-
-    pdf = PDF()
-    pdf.add_page()
-
-    def section(title):
-        pdf.ln(4)
-        pdf.set_font("Helvetica", "B", 12)
-        pdf.set_fill_color(41, 128, 185)
-        pdf.set_text_color(255, 255, 255)
-        pdf.cell(0, 9, _latin1(f" {title}"), border=0, fill=True, **NEXT)
-        pdf.set_text_color(44, 62, 80)
-        pdf.ln(1)
-
-    def metric_line(label, value):
-        pdf.set_font("Helvetica", "B", 11)
-        pdf.cell(80, 7, _latin1(f" {label}"), border=0)
-        pdf.set_font("Helvetica", "", 11)
-        pdf.cell(0, 7, _latin1(value), border=0, **NEXT)
-
-    pdf.set_font("Helvetica", "B", 15)
-    pdf.set_text_color(44, 62, 80)
-    pdf.cell(0, 10, _latin1(f"Criança: {profile.name}"), align="C", **NEXT)
-    pdf.set_font("Helvetica", "", 10)
-    period = f"últimos {days} dias" if days else "todo o histórico"
-    pdf.cell(0, 6, _latin1(f"Período: {period}  |  Emitido em {datetime.now().strftime('%d/%m/%Y')}"), align="C", **NEXT)
-
-    section("Visão geral")
-    metric_line("Atividades concluídas:", stats["total_activities"])
-    metric_line("Taxa de acerto:", f"{stats['accuracy']}%")
-    metric_line("Estrelas:", stats["total_stars"])
-    total_minutes = stats["total_time"] // 60000
-    metric_line("Tempo de prática:", f"{total_minutes} min" if total_minutes < 60 else f"{total_minutes // 60}h {total_minutes % 60}min")
-    metric_line("Tempo médio por resposta:", f"{stats['avg_response_time'] / 1000:.1f} s")
-    metric_line("Tentativas por questão:", stats["avg_attempts"])
-    if stats["help_levels"]:
-        metric_line("Ajuda registrada:", ", ".join(f"{HELP_LABELS.get(k, k)}: {v}" for k, v in stats["help_levels"].items()))
-
-    section("Por área de habilidade")
-    for area in stats["areas_breakdown"].values():
-        value = f"{area['accuracy']}% de acerto em {area['sessions']} sessões" if area["accuracy"] is not None else "sem registros"
-        metric_line(f"{area['name']}:", value)
-
-    section("Por atividade")
-    if not stats["activities_breakdown"]:
-        pdf.set_font("Helvetica", "I", 11)
-        pdf.cell(0, 8, _latin1(" Nenhuma atividade registrada ainda."), **NEXT)
-    for data in stats["activities_breakdown"].values():
-        pdf.set_font("Helvetica", "B", 11)
-        pdf.cell(55, 8, _latin1(f" {data['name']}"), border="B")
-        pdf.set_font("Helvetica", "", 11)
-        pdf.cell(0, 8, _latin1(f"Acerto: {data['accuracy']}%  |  Sessões: {data['sessions']}  |  Nível: {data['current_level']}"), border="B", **NEXT)
-
-    if goals:
-        section("Metas")
-        for goal in goals:
-            status = "concluída" if goal.completed else f"{goal.current_value:g} de {goal.target_value:g}"
-            metric_line(f"{activity_name(goal.activity_type)}:", f"{goal.description or goal.target_type} ({status})")
-
-    if request_summary:
-        section("Pedidos feitos pela criança na prancha")
-        metric_line("Total no período:", sum(r["count"] for r in request_summary))
-        metric_line("Mais frequentes:", ", ".join(f"{r['label']} ({r['count']})" for r in request_summary[:6]))
-
-    if mood_summary:
-        section("Como a criança disse que estava se sentindo")
-        total_moods = sum(m["count"] for m in mood_summary)
-        metric_line("Registros no período:", total_moods)
-        for m in mood_summary:
-            metric_line(f"{m['label']}:", f"{m['count']} {'vez' if m['count'] == 1 else 'vezes'}")
-        hard = sum(m["count"] for m in mood_summary if m["hard"])
-        metric_line("Emoções difíceis:", f"{hard} de {total_moods} ({round(100 * hard / total_moods)}%)")
-
-    if notes:
-        section("Diário de observações (mais recentes)")
-        for note in notes:
-            pdf.set_font("Helvetica", "B", 10)
-            when = note.created_at.strftime("%d/%m/%Y") if note.created_at else ""
-            pdf.cell(0, 6, _latin1(f" {when} - {note.author or ''}"), **NEXT)
-            pdf.set_font("Helvetica", "", 10)
-            pdf.multi_cell(0, 5, _latin1(f" {note.content}"), **NEXT)
-            pdf.ln(1)
-
-    pdf.ln(8)
-    pdf.set_font("Helvetica", "I", 9)
-    pdf.set_text_color(127, 140, 141)
-    nota = ("Este relatório apoia o acompanhamento e não é diagnóstico. As informações devem ser "
-            "interpretadas pelos responsáveis e pela equipe que acompanha a criança.")
-    pdf.multi_cell(0, 5, text=_latin1(nota))
-
+    content = build_report(
+        profile=profile, days=days, summary=summary, stats=stats, goals=goals, notes=notes,
+        requests=summarize(request_query.all()), moods=summarize_moods(mood_query.all()),
+        recs=AIEngine.generate_recommendations(db, profile_id),
+        area_names={k: a["name"] for k, a in AREAS.items()}, activity_name=activity_name,
+    )
     safe_name = "".join(c if c.isalnum() else "_" for c in profile.name)
     return Response(
-        content=bytes(pdf.output()),
+        content=content,
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename=relatorio_lumina_{safe_name}.pdf"},
     )

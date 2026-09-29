@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lumina-v6';
+const CACHE_NAME = 'lumina-v7';
 const STATIC_ASSETS = [
     '/',
     '/css/style.css',
