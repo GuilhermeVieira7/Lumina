@@ -55,6 +55,7 @@ class Profile(Base):
     access = relationship("ProfileAccess", back_populates="profile", cascade="all, delete-orphan")
     decisions = relationship("RecommendationDecision", back_populates="profile", cascade="all, delete-orphan")
     requests = relationship("ChildRequest", back_populates="profile", cascade="all, delete-orphan")
+    moods = relationship("MoodCheck", back_populates="profile", cascade="all, delete-orphan")
 
 
 class Session(Base):
@@ -116,6 +117,7 @@ class Settings(Base):
     mastery_sessions = Column(Integer, default=3)    # sessões seguidas acima do critério
     token_board = Column(Boolean, default=True)      # quadro de fichas antes das atividades
     request_board = Column(Boolean, default=True)    # botão "Pedir" na área da criança
+    mood_checkin = Column(Boolean, default=True)     # "Como estou me sentindo?" ao entrar
     rewards_json = Column(Text, nullable=True)       # prêmios que a criança pode escolher
     requests_json = Column(Text, nullable=True)      # pedidos que aparecem na prancha
 
@@ -264,3 +266,16 @@ class ChildRequest(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     profile = relationship("Profile", back_populates="requests")
+
+
+class MoodCheck(Base):
+    """Emoção que a criança escolheu em "Como estou me sentindo?"."""
+    __tablename__ = "mood_checks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id"), nullable=False)
+    mood = Column(String(20), nullable=False)
+    moment = Column(String(20), default="entrada")  # entrada (ao abrir a área) ou livre (botão na tela inicial)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    profile = relationship("Profile", back_populates="moods")

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lumina-v4';
+const CACHE_NAME = 'lumina-v5';
 const STATIC_ASSETS = [
     '/',
     '/css/style.css',
@@ -12,6 +12,7 @@ const STATIC_ASSETS = [
     '/js/child.js',
     '/js/activities.js',
     '/js/board.js',
+    '/js/mood.js',
     '/js/admin.js',
     '/js/app.js',
     '/js/vendor/chart.umd.js',

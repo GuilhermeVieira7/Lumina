@@ -522,6 +522,26 @@ body.child-mode .screen { padding-bottom: 110px; }
 .ask-said #ask-said-text { font-size: 2rem; font-weight: 800; margin: 10px 0 4px; }
 .ask-said .shared-note { margin-bottom: 18px; font-size: 1rem; }
 
+/* ---- Como estou me sentindo? ---- */
+.mood-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 760px; margin: 0 auto; }
+.mood-card {
+    min-height: 170px; border-radius: var(--radius); border: 4px solid var(--mood, var(--border)); background: var(--card); box-shadow: var(--shadow);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 1.25rem;
+}
+.mood-card .pic { font-size: 4.5rem; line-height: 1; }
+.mood-card .picto { width: 110px; height: 110px; }
+.mood-card:hover, .mood-card:focus-visible { background: color-mix(in srgb, var(--mood) 14%, var(--card)); }
+.mood-said { text-align: center; padding: 20px 0; max-width: 640px; margin: 0 auto; }
+.mood-said .pic {
+    display: inline-flex; align-items: center; justify-content: center; font-size: 7rem; line-height: 1;
+    width: 190px; height: 190px; border-radius: 50%; border: 6px solid var(--mood, var(--border)); background: var(--card);
+}
+.mood-said .picto { width: 150px; height: 150px; }
+.mood-said #mood-said-text { font-size: 2rem; font-weight: 800; margin: 14px 0 4px; }
+.mood-said .shared-note { font-size: 1.1rem; margin-bottom: 20px; }
+.mood-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+body.low-stimulus .mood-card, body.low-stimulus .mood-said .pic { border-color: var(--border); }
+
 /* ---- Chips (ajustes e resumo de pedidos) ---- */
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
@@ -549,6 +569,13 @@ body.child-mode .screen { padding-bottom: 110px; }
     .question-text { font-size: 1.35rem; }
     .role-picker, .pause-choices { grid-template-columns: 1fr; }
     .reward-grid { grid-template-columns: repeat(2, 1fr); }
+    .mood-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .mood-card { min-height: 130px; font-size: 1.05rem; }
+    .mood-card .pic { font-size: 3.4rem; }
+    .mood-card .picto { width: 80px; height: 80px; }
+    .mood-said .pic { width: 150px; height: 150px; font-size: 5rem; }
+    .mood-said .picto { width: 110px; height: 110px; }
+    .mood-said #mood-said-text { font-size: 1.5rem; }
     .ask-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .ask-card { min-height: 96px; font-size: .95rem; padding: 6px 2px; }
     .ask-card .pic { font-size: 2.4rem; }

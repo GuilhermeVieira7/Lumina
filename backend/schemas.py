@@ -4,7 +4,7 @@
 # ==========================================
 
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Literal, Optional, List
 from datetime import datetime, date
 
 
@@ -144,6 +144,7 @@ class SettingsUpdate(BaseModel):
     mastery_sessions: Optional[int] = Field(None, ge=1, le=10)
     token_board: Optional[bool] = None
     request_board: Optional[bool] = None
+    mood_checkin: Optional[bool] = None
     rewards: Optional[List["RewardItem"]] = Field(None, min_length=1, max_length=12)
     requests: Optional[List[str]] = Field(None, min_length=1, max_length=20)
 
@@ -162,6 +163,7 @@ class SettingsResponse(BaseModel):
     mastery_sessions: int = 3
     token_board: bool = True
     request_board: bool = True
+    mood_checkin: bool = True
     rewards: List["RewardItem"] = []
     requests: List[str] = []
 
@@ -325,6 +327,22 @@ class ChildRequestResponse(BaseModel):
     icon: str
     label: str
     context: Optional[str] = None
+    created_at: datetime
+
+
+# ---- Como estou me sentindo ----
+
+class MoodCreate(BaseModel):
+    profile_id: int
+    mood: str = Field(..., min_length=1, max_length=20)
+    moment: Literal["entrada", "livre"] = "entrada"
+
+class MoodResponse(BaseModel):
+    id: int
+    mood: str
+    icon: str
+    label: str
+    moment: str
     created_at: datetime
 
 
