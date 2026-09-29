@@ -11,9 +11,10 @@ from datetime import datetime, timedelta
 
 from database import get_db
 from data.activity_bank import ACTIVITY_AREA, AREAS, activity_name
-from models import User, Profile, Session, Response as ResponseModel, Note, Goal
+from models import User, Profile, Session, Response as ResponseModel, Note, Goal, ChildRequest
 from schemas import SessionCreate, SessionResponse, SessionUpdate
 from routers.goals import refresh_goals
+from routers.requests import summarize
 from auth import get_current_user
 from permissions import get_profile_for
 
@@ -53,6 +54,8 @@ def create_session(
         total_time=session_data.total_time,
         stars=stars,
         is_practice=session_data.is_practice,
+        reward=(session_data.reward or "").strip() or None,
+        timed_out=session_data.timed_out,
     )
     db.add(session)
     db.flush()  # obter ID sem commitar
@@ -268,6 +271,11 @@ def export_pdf(
     )
     refresh_goals(db, profile_id)
     goals = db.query(Goal).filter(Goal.profile_id == profile_id).all()
+    request_query = db.query(ChildRequest).filter(ChildRequest.profile_id == profile_id)
+    since = _since(days)
+    if since:
+        request_query = request_query.filter(ChildRequest.created_at >= since)
+    request_summary = summarize(request_query.all())
 
     SYSTEM_NAME = "Lumina TEA Edu"
     NEXT = dict(new_x=XPos.LMARGIN, new_y=YPos.NEXT)
@@ -345,6 +353,11 @@ def export_pdf(
         for goal in goals:
             status = "concluída" if goal.completed else f"{goal.current_value:g} de {goal.target_value:g}"
             metric_line(f"{activity_name(goal.activity_type)}:", f"{goal.description or goal.target_type} ({status})")
+
+    if request_summary:
+        section("Pedidos feitos pela criança na prancha")
+        metric_line("Total no período:", sum(r["count"] for r in request_summary))
+        metric_line("Mais frequentes:", ", ".join(f"{r['label']} ({r['count']})" for r in request_summary[:6]))
 
     if notes:
         section("Diário de observações (mais recentes)")

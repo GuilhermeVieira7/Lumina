@@ -2,8 +2,12 @@
 # ROUTER: Configurações
 # ==========================================
 
+import json
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session as DBSession
+
+from data.communication import REQUESTS_BY_KEY
 
 from database import get_db
 from models import User, Profile, Settings
@@ -51,9 +55,23 @@ def update_settings(
 
     # Atualizar apenas campos fornecidos
     update_data = settings_data.model_dump(exclude_unset=True)
+    rewards = update_data.pop("rewards", None)
+    requests = update_data.pop("requests", None)
     for field, value in update_data.items():
         if value is not None:
             setattr(settings, field, value)
+
+    if rewards is not None:
+        cleaned = [{"icon": r["icon"].strip(), "label": r["label"].strip()} for r in rewards]
+        if any(not r["icon"] or not r["label"] for r in cleaned):
+            raise HTTPException(status_code=400, detail="Cada prêmio precisa de figura e nome")
+        settings.rewards_json = json.dumps(cleaned, ensure_ascii=False)
+    if requests is not None:
+        unknown = [k for k in requests if k not in REQUESTS_BY_KEY]
+        if unknown:
+            raise HTTPException(status_code=400, detail=f"Pedido desconhecido: {', '.join(unknown)}")
+        ordered = [k for k in REQUESTS_BY_KEY if k in set(requests)]
+        settings.requests_json = json.dumps(ordered)
 
     db.commit()
     db.refresh(settings)

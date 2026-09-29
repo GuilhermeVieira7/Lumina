@@ -8,10 +8,13 @@ const App = {
     profile: null,
     settings: null,
     activities: {},   // metadados das atividades (nome, ícone, área)
+    requestOptions: [], // pedidos possíveis da prancha
+    rewardOptions: [],  // prêmios sugeridos para o quadro de fichas
 
     async init() {
         ThemeController.init();
         this._wire();
+        await Pictos.load();
 
         const host = window.location.hostname;
         if (host === 'localhost' || host === '127.0.0.1') {
@@ -38,14 +41,16 @@ const App = {
         document.getElementById('child-exit').addEventListener('click', () => this.leaveChild());
         document.getElementById('new-profile-form').addEventListener('submit', e => this.createProfile(e));
         document.querySelectorAll('.modal').forEach(m => m.addEventListener('keydown', e => {
-            if (e.key === 'Escape' && m.id !== 'password-modal' && m.id !== 'pause-modal') UI.close(m.id);
+            if (e.key === 'Escape' && !['password-modal', 'pause-modal', 'ask-modal'].includes(m.id)) UI.close(m.id);
         }));
     },
 
     async loadSession() {
         this.user = await API.get('/auth/me');
-        const list = await API.get('/activities');
+        const [list, options] = await Promise.all([API.get('/activities'), API.get('/requests/options')]);
         this.activities = Object.fromEntries(list.map(a => [a.type, a]));
+        this.requestOptions = options.requests;
+        this.rewardOptions = options.rewards;
         await this.loadProfiles();
 
         if (!this.profiles.length && this.user.role !== 'therapist') {
@@ -92,7 +97,7 @@ const App = {
         try {
             this.settings = await API.get(`/settings/${profile.id}`);
         } catch {
-            this.settings = { sound_enabled: true, voice_enabled: false, low_stimulus: false };
+            this.settings = { sound_enabled: true, voice_enabled: false, low_stimulus: false, token_board: false, request_board: false };
         }
         this.applySettings();
         if (rerender) this.renderSelect();
@@ -102,6 +107,7 @@ const App = {
         const s = this.settings || {};
         SoundController.configure(s);
         document.body.classList.toggle('low-stimulus', !!s.low_stimulus);
+        RequestBoard.refreshButton();
     },
 
     enterChild() {

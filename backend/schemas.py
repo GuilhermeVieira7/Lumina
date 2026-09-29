@@ -93,6 +93,8 @@ class SessionCreate(BaseModel):
     incorrect: int
     total_time: int  # ms
     is_practice: bool = False
+    reward: Optional[str] = Field(None, max_length=60)
+    timed_out: bool = False
     responses: List[ResponseCreate] = []
 
 class SessionResponse(BaseModel):
@@ -108,6 +110,8 @@ class SessionResponse(BaseModel):
     stars: int
     is_practice: bool
     help_level: Optional[str] = None
+    reward: Optional[str] = None
+    timed_out: bool = False
     created_at: datetime
 
     class Config:
@@ -118,6 +122,12 @@ class SessionUpdate(BaseModel):
 
 
 # ---- Settings Schemas ----
+
+class RewardItem(BaseModel):
+    """Prêmio do quadro de fichas: figura + nome curto."""
+    icon: str = Field(..., min_length=1, max_length=16)
+    label: str = Field(..., min_length=1, max_length=30)
+
 
 class SettingsUpdate(BaseModel):
     difficulty: Optional[int] = None
@@ -132,6 +142,10 @@ class SettingsUpdate(BaseModel):
     low_stimulus: Optional[bool] = None
     mastery_threshold: Optional[int] = Field(None, ge=50, le=100)
     mastery_sessions: Optional[int] = Field(None, ge=1, le=10)
+    token_board: Optional[bool] = None
+    request_board: Optional[bool] = None
+    rewards: Optional[List["RewardItem"]] = Field(None, min_length=1, max_length=12)
+    requests: Optional[List[str]] = Field(None, min_length=1, max_length=20)
 
 class SettingsResponse(BaseModel):
     difficulty: int
@@ -146,6 +160,10 @@ class SettingsResponse(BaseModel):
     low_stimulus: bool = False
     mastery_threshold: int = 85
     mastery_sessions: int = 3
+    token_board: bool = True
+    request_board: bool = True
+    rewards: List["RewardItem"] = []
+    requests: List[str] = []
 
     class Config:
         from_attributes = True
@@ -236,12 +254,14 @@ class PlanResponse(BaseModel):
     enabled: bool
     recommended: bool
     question_count: int
+    time_limit: int = 0
 
 class PlanUpdate(BaseModel):
     level: Optional[int] = Field(None, ge=1, le=10)
     enabled: Optional[bool] = None
     recommended: Optional[bool] = None
     question_count: Optional[int] = Field(None, ge=2, le=10)
+    time_limit: Optional[int] = Field(None, ge=0, le=30)  # minutos; 0 desliga o timer
 
 
 # ---- Diário (notas) ----
@@ -272,12 +292,14 @@ class RoutineItemCreate(BaseModel):
     icon: str = Field("⭐", max_length=16)
     label: str = Field(..., min_length=1, max_length=60)
     time: Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")
+    duration: Optional[int] = Field(None, ge=1, le=120)  # minutos no timer visual
 
 class RoutineItemUpdate(BaseModel):
     icon: Optional[str] = Field(None, max_length=16)
     label: Optional[str] = Field(None, min_length=1, max_length=60)
     time: Optional[str] = Field(None, pattern=r"^(\d{2}:\d{2})?$")
     position: Optional[int] = None
+    duration: Optional[int] = Field(None, ge=0, le=120)  # 0 remove o timer
 
 class RoutineItemResponse(BaseModel):
     id: int
@@ -286,7 +308,24 @@ class RoutineItemResponse(BaseModel):
     icon: str
     label: str
     time: Optional[str] = None
+    duration: Optional[int] = None
     done_today: bool = False
+
+
+# ---- Prancha de pedidos ----
+
+class ChildRequestCreate(BaseModel):
+    profile_id: int
+    key: str = Field(..., min_length=1, max_length=20)
+    context: Optional[str] = Field(None, max_length=60)
+
+class ChildRequestResponse(BaseModel):
+    id: int
+    key: str
+    icon: str
+    label: str
+    context: Optional[str] = None
+    created_at: datetime
 
 
 # ---- Acesso de profissionais ----

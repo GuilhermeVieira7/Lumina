@@ -156,10 +156,10 @@ ACTIVITY_BANK = {
         "icon": "😊",
         "levels": {
             1: [
-                {"question": "Qual emoji está feliz?",      "type": "shape", "correct": "😊", "options": ["😊", "😢", "😠"]},
-                {"question": "Qual emoji está triste?",      "type": "shape", "correct": "😢", "options": ["😊", "😢", "😠"]},
-                {"question": "Qual emoji está com raiva?",   "type": "shape", "correct": "😠", "options": ["😊", "😢", "😠"]},
-                {"question": "Qual emoji está com sono?",    "type": "shape", "correct": "😴", "options": ["😊", "😢", "😴"]},
+                {"question": "Quem está feliz?",      "type": "shape", "correct": "😊", "options": ["😊", "😢", "😠"]},
+                {"question": "Quem está triste?",      "type": "shape", "correct": "😢", "options": ["😊", "😢", "😠"]},
+                {"question": "Quem está com raiva?",   "type": "shape", "correct": "😠", "options": ["😊", "😢", "😠"]},
+                {"question": "Quem está com sono?",    "type": "shape", "correct": "😴", "options": ["😊", "😢", "😴"]},
             ],
             2: [
                 {"question": "Como se sente ao ganhar um presente?", "type": "shape", "correct": "😊", "options": ["😊", "😢", "😠"]},
