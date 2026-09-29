@@ -279,33 +279,38 @@
 <section id="panel-screen" class="screen" aria-labelledby="panel-title">
     <div class="wrap">
         <div class="panel-top">
-            <div>
-                <h1 id="panel-title">Painel dos Adultos</h1>
-                <div class="panel-child">
-                    <div id="panel-profile" class="kid-row" role="group" aria-label="Criança"></div>
-                    <span id="panel-shared" class="shared-note"></span>
-                </div>
+            <h1 id="panel-title"><span class="lbl-long">Painel dos Adultos</span><span class="lbl-short">Painel</span></h1>
+            <div class="panel-actions">
+                <button class="btn btn-soft btn-small" id="panel-child-btn" aria-label="Área da Criança"><span aria-hidden="true">🎨</span> <span class="lbl-long" aria-hidden="true">Área da Criança</span><span class="lbl-short" aria-hidden="true">Criança</span></button>
+                <button class="btn btn-outline btn-small" id="panel-back" aria-label="Sair do painel"><span aria-hidden="true">←</span> <span aria-hidden="true">Sair</span></button>
             </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap">
-                <button class="btn btn-soft btn-small" id="panel-child-btn"><span aria-hidden="true">🎨</span> Área da Criança</button>
-                <button class="btn btn-outline btn-small" id="panel-back"><span aria-hidden="true">←</span> Sair do painel</button>
+            <div class="panel-child">
+                <div id="panel-profile" class="kid-row" role="group" aria-label="Criança"></div>
+                <span id="panel-shared" class="shared-note"></span>
             </div>
         </div>
 
+        <!-- Quatro seções; cada uma tem suas partes logo abaixo -->
         <div class="tabs" role="tablist" aria-label="Seções do painel">
-            <button class="tab" role="tab" data-tab="dashboard" aria-selected="true"><span aria-hidden="true">📊</span> Progresso</button>
-            <button class="tab" role="tab" data-tab="sessions"><span aria-hidden="true">🕒</span> Sessões</button>
-            <button class="tab" role="tab" data-tab="recs"><span aria-hidden="true">💡</span> Recomendações <span id="recs-count" class="pill info hidden"></span></button>
-            <button class="tab" role="tab" data-tab="diary"><span aria-hidden="true">📓</span> Diário</button>
-            <button class="tab" role="tab" data-tab="goals"><span aria-hidden="true">🎯</span> Metas</button>
-            <button class="tab" role="tab" data-tab="plan"><span aria-hidden="true">🧩</span> Atividades</button>
-            <button class="tab" role="tab" data-tab="routine"><span aria-hidden="true">📅</span> Rotina</button>
-            <button class="tab" role="tab" data-tab="profile"><span aria-hidden="true">👤</span> Perfil e acesso</button>
-            <button class="tab" role="tab" data-tab="settings"><span aria-hidden="true">⚙️</span> Ajustes</button>
+            <button class="tab" role="tab" data-group="progress" aria-selected="true"><span class="tab-ico" aria-hidden="true">📊</span> Progresso <span class="pill info recs-count hidden"></span></button>
+            <button class="tab" role="tab" data-group="diary"><span class="tab-ico" aria-hidden="true">📓</span> Diário</button>
+            <button class="tab" role="tab" data-group="plan"><span class="tab-ico" aria-hidden="true">🧩</span> Plano</button>
+            <button class="tab" role="tab" data-group="config"><span class="tab-ico" aria-hidden="true">⚙️</span> Ajustes</button>
+        </div>
+        <div class="subtabs" role="group" aria-label="Partes da seção">
+            <button data-tab="dashboard" data-in="progress">Resumo</button>
+            <button data-tab="recs" data-in="progress">Sugestões <span class="pill info recs-count hidden"></span></button>
+            <button data-tab="sessions" data-in="diary">Sessões</button>
+            <button data-tab="diary" data-in="diary">Emoções e observações</button>
+            <button data-tab="plan" data-in="plan">Atividades</button>
+            <button data-tab="routine" data-in="plan">Rotina</button>
+            <button data-tab="goals" data-in="plan">Metas</button>
+            <button data-tab="profile" data-in="config">Criança e acesso</button>
+            <button data-tab="settings" data-in="config">Preferências</button>
         </div>
 
         <!-- Progresso -->
-        <div class="tab-panel active" id="tab-dashboard" role="tabpanel">
+        <div class="tab-panel active" id="tab-dashboard">
             <div class="toolbar">
                 <div class="segmented" role="group" aria-label="Período">
                     <button data-days="7">7 dias</button>
@@ -317,30 +322,32 @@
                     <button class="btn btn-soft btn-small" id="share-whatsapp"><span aria-hidden="true">📱</span> WhatsApp</button>
                 </div>
             </div>
-            <div class="stats" id="stats"></div>
+            <div id="summary" class="card summary-card" aria-live="polite"></div>
             <div class="charts">
-                <div class="card"><h2>Acerto por área de habilidade</h2><div class="chart-box"><canvas id="chart-areas" aria-label="Gráfico de acerto por área"></canvas></div></div>
-                <div class="card"><h2>Evolução no período</h2><div class="chart-box"><canvas id="chart-timeline" aria-label="Gráfico de evolução"></canvas></div></div>
-                <div class="card"><h2>Acerto por atividade</h2><div class="chart-box"><canvas id="chart-activities" aria-label="Gráfico por atividade"></canvas></div></div>
-                <div class="card"><h2>Como a criança se sentiu</h2><div class="chart-box"><canvas id="chart-moods" aria-label="Gráfico das emoções por dia"></canvas></div>
+                <div class="card"><h2>Acerto de primeira por dia</h2><div class="chart-box"><canvas id="chart-timeline" role="img" aria-label="Gráfico do acerto médio por dia"></canvas></div>
+                    <p id="timeline-empty" class="shared-note hidden">Nenhuma atividade no período.</p></div>
+                <div class="card"><h2>Acerto por área de habilidade</h2><div class="chart-box"><canvas id="chart-areas" role="img" aria-label="Gráfico de acerto por área"></canvas></div>
+                    <p id="areas-note" class="shared-note hidden"></p></div>
+                <div class="card"><h2>Acerto por atividade</h2><div class="chart-box"><canvas id="chart-activities" role="img" aria-label="Gráfico por atividade"></canvas></div></div>
+                <div class="card"><h2>Como a criança se sentiu</h2><div class="chart-box"><canvas id="chart-moods" role="img" aria-label="Gráfico das emoções por dia"></canvas></div>
                     <p id="moods-empty" class="shared-note hidden">Nenhuma emoção registrada no período. Ela aparece quando a criança responde "Como você está se sentindo?".</p></div>
             </div>
         </div>
 
         <!-- Sessões -->
-        <div class="tab-panel" id="tab-sessions" role="tabpanel">
+        <div class="tab-panel" id="tab-sessions">
             <p class="shared-note" style="margin-bottom:12px">Registre quanta ajuda a criança precisou e, se quiser, uma observação sobre a sessão.</p>
             <div id="sessions-list" class="list"></div>
         </div>
 
         <!-- Recomendações -->
-        <div class="tab-panel" id="tab-recs" role="tabpanel">
+        <div class="tab-panel" id="tab-recs">
             <p class="shared-note" style="margin-bottom:12px">As sugestões seguem regras explícitas e nada muda para a criança até um adulto aceitar.</p>
             <div id="recs-list" class="list"></div>
         </div>
 
         <!-- Diário -->
-        <div class="tab-panel" id="tab-diary" role="tabpanel">
+        <div class="tab-panel" id="tab-diary">
             <div class="card" style="margin-bottom:16px">
                 <h2><span aria-hidden="true">🙂</span> Como a criança se sentiu (últimos 7 dias)</h2>
                 <div id="moods-summary" class="chip-row"></div>
@@ -364,7 +371,7 @@
         </div>
 
         <!-- Metas -->
-        <div class="tab-panel" id="tab-goals" role="tabpanel">
+        <div class="tab-panel" id="tab-goals">
             <div class="card" style="margin-bottom:16px">
                 <form id="goal-form" class="grid-2" style="align-items:end">
                     <div class="field"><label for="goal-activity">Atividade</label><select id="goal-activity"></select></div>
@@ -383,7 +390,7 @@
         </div>
 
         <!-- Plano de atividades -->
-        <div class="tab-panel" id="tab-plan" role="tabpanel">
+        <div class="tab-panel" id="tab-plan">
             <p class="shared-note" style="margin-bottom:12px">Escolha o que aparece para a criança (poucas opções ajudam), o nível, quantas etapas cada atividade tem e, se quiser, um timer visual. A ⭐ destaca a atividade no menu.</p>
             <div id="plan-list" class="list"></div>
             <div class="card" style="margin-top:16px">
@@ -398,7 +405,7 @@
         </div>
 
         <!-- Rotina -->
-        <div class="tab-panel" id="tab-routine" role="tabpanel">
+        <div class="tab-panel" id="tab-routine">
             <div class="card" style="margin-bottom:16px">
                 <h2>Adicionar etapa da rotina</h2>
                 <form id="routine-form">
@@ -416,7 +423,7 @@
         </div>
 
         <!-- Perfil e acesso -->
-        <div class="tab-panel" id="tab-profile" role="tabpanel">
+        <div class="tab-panel" id="tab-profile">
             <div class="grid-2">
                 <div class="card">
                     <h2>Perfil da criança</h2>
@@ -440,7 +447,7 @@
         </div>
 
         <!-- Ajustes -->
-        <div class="tab-panel" id="tab-settings" role="tabpanel">
+        <div class="tab-panel" id="tab-settings">
             <div class="grid-2">
                 <div class="card">
                     <h2>Conforto sensorial da criança</h2>

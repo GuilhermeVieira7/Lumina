@@ -23,7 +23,18 @@ const Admin = {
 
     _wire() {
         this.wired = true;
-        document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => this.show(t.dataset.tab)));
+        // Quatro seções (abas) e, dentro de cada uma, suas partes (subabas)
+        document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => this.showGroup(t.dataset.group)));
+        document.querySelectorAll('.tabs').forEach(list => list.addEventListener('keydown', e => {
+            if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+            const tabs = [...list.querySelectorAll('.tab:not(.hidden)')];
+            const i = tabs.indexOf(document.activeElement);
+            if (i < 0) return;
+            const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+            next.focus();
+            next.click();
+        }));
+        document.querySelectorAll('.subtabs [data-tab]').forEach(b => b.addEventListener('click', () => this.show(b.dataset.tab)));
         document.getElementById('panel-back').addEventListener('click', () => { App.renderSelect(); UI.showScreen('select-screen'); });
         document.getElementById('panel-child-btn').addEventListener('click', () => App.enterChild());
         document.getElementById('panel-profile').addEventListener('click', async e => {
@@ -87,18 +98,48 @@ const Admin = {
             ? `Compartilhado por ${App.profile.owner_name}` : '';
         document.getElementById('panel-child-btn').classList.toggle('hidden', !App.profile);
 
-        // Sem criança: só Ajustes (convites) e, para responsáveis, o cadastro
-        document.querySelectorAll('.tab').forEach(t => {
-            const needsProfile = !['settings', 'profile'].includes(t.dataset.tab);
-            t.classList.toggle('hidden', !App.profile && (needsProfile || (t.dataset.tab === 'profile' && App.user.role === 'therapist')));
+        // Sem criança: só Ajustes (preferências e, para responsáveis, o cadastro)
+        const therapist = App.user.role === 'therapist';
+        document.querySelectorAll('.subtabs [data-tab]').forEach(b => {
+            const t = b.dataset.tab;
+            b.dataset.off = !App.profile && (!['settings', 'profile'].includes(t) || (t === 'profile' && therapist)) ? '1' : '';
         });
-        document.querySelector('[data-tab="profile"]').innerHTML = this.isOwner || !App.profile
-            ? '<span aria-hidden="true">👤</span> Perfil e acesso' : '<span aria-hidden="true">👤</span> Perfil';
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('hidden', !App.profile && t.dataset.group !== 'config'));
+        document.querySelector('.subtabs [data-tab="profile"]').textContent = this.isOwner || !App.profile ? 'Criança e acesso' : 'Criança';
+    },
+
+    GROUPS: {
+        dashboard: 'progress', recs: 'progress',
+        sessions: 'diary', diary: 'diary',
+        plan: 'plan', routine: 'plan', goals: 'plan',
+        profile: 'config', settings: 'config',
+    },
+    lastInGroup: {},
+
+    showGroup(group) {
+        const available = [...document.querySelectorAll(`.subtabs [data-in="${group}"]`)].filter(b => !b.dataset.off).map(b => b.dataset.tab);
+        const remembered = this.lastInGroup[group];
+        this.show(available.includes(remembered) ? remembered : available[0]);
     },
 
     show(tab) {
+        if (!App.profile && !['settings', 'profile'].includes(tab)) tab = 'settings';
+        if (tab === 'profile' && !App.profile && App.user.role === 'therapist') tab = 'settings';
+        const group = this.GROUPS[tab];
         this.tab = tab;
-        document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.tab === tab));
+        this.lastInGroup[group] = tab;
+        document.querySelectorAll('.tab').forEach(t => {
+            const on = t.dataset.group === group;
+            t.setAttribute('aria-selected', on);
+            t.tabIndex = on ? 0 : -1;
+        });
+        const subs = [...document.querySelectorAll('.subtabs [data-tab]')];
+        subs.forEach(b => {
+            b.hidden = b.dataset.in !== group || !!b.dataset.off;
+            b.setAttribute('aria-pressed', b.dataset.tab === tab);
+        });
+        // Uma parte só: não precisa mostrar a linha de subabas
+        document.querySelector('.subtabs').classList.toggle('hidden', subs.filter(b => !b.hidden).length < 2);
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${tab}`));
         const loaders = {
             dashboard: () => this.loadDashboard(),
@@ -120,29 +161,45 @@ const Admin = {
     // ---------- Progresso ----------
     async loadDashboard() {
         const q = this.days ? `&days=${this.days}` : '';
+        const tz = new Date().getTimezoneOffset();
         try {
-            const [stats, sessions, requests, moods] = await Promise.all([
+            const [summary, stats, moods] = await Promise.all([
+                API.get(`/summary/${this.pid}?${this.days ? `days=${this.days}` : 'all_time=true'}&tz=${tz}`),
                 API.get(`/sessions/stats?profile_id=${this.pid}${q}`),
-                API.get(`/sessions?profile_id=${this.pid}&limit=60&include_practice=false${q}`),
-                API.get(`/requests/${this.pid}?limit=1${q}`),
-                API.get(`/moods/${this.pid}?days=${this.days || 90}&limit=1&tz=${new Date().getTimezoneOffset()}`),
+                API.get(`/moods/${this.pid}?days=${this.days || 90}&limit=1&tz=${tz}`),
             ]);
-            const stat = (pic, label, value) =>
-                `<div class="stat"><span class="pic" aria-hidden="true">${pic}</span><div><div class="label">${label}</div><div class="value">${value}</div></div></div>`;
-            document.getElementById('stats').innerHTML =
-                stat('🧩', 'Atividades', stats.total_activities) +
-                stat('🎯', 'Acerto de primeira', `${stats.accuracy}%`) +
-                stat('⏱️', 'Tempo de prática', UI.formatMinutes(stats.total_time)) +
-                stat('⭐', 'Estrelas', stats.total_stars) +
-                stat('🔁', 'Tentativas por questão', stats.avg_attempts) +
-                stat('💬', 'Pedidos na prancha', requests.total) +
-                stat('🙂', 'Emoções registradas', moods.total);
-            this._charts(stats, sessions.slice().reverse());
+            this.summary = summary;
+            this._renderSummary(summary);
+            this._charts(stats, summary.daily);
             this._moodChart(moods);
         } catch (err) { this._fail(err); }
     },
 
-    _charts(stats, sessions) {
+    /** Topo do Progresso: uma frase em linguagem simples e os três números que importam. */
+    _renderSummary(s) {
+        const change = s.accuracy_change;
+        const trend = change === null || s.accuracy === null ? ''
+            : Math.abs(change) < 3 ? '<span class="pill info">estável</span>'
+            : `<span class="pill ${change > 0 ? 'ok' : 'warn'}"><span aria-hidden="true">${change > 0 ? '▲' : '▼'}</span> ${Math.abs(Math.round(change))} pontos</span>`;
+        const big = (pic, value, label, extra = '') =>
+            `<div class="big-num"><span class="pic" aria-hidden="true">${pic}</span><b>${value}</b><span>${label}</span>${extra}</div>`;
+        const extras = [
+            ['⭐', `${s.stars} ${s.stars === 1 ? 'estrela' : 'estrelas'}`],
+            ['📅', `${s.active_days} ${s.active_days === 1 ? 'dia com atividade' : 'dias com atividade'}`],
+            ['💬', `${s.requests} ${s.requests === 1 ? 'pedido' : 'pedidos'} na prancha`],
+            ['🙂', `${s.moods} ${s.moods === 1 ? 'emoção registrada' : 'emoções registradas'}`],
+        ];
+        document.getElementById('summary').innerHTML = `
+            <p class="headline">${UI.esc(s.headline)}</p>
+            <div class="big-nums">
+                ${big('🧩', s.activities, s.activities === 1 ? 'atividade' : 'atividades')}
+                ${big('🎯', s.accuracy === null ? '–' : `${Math.round(s.accuracy)}%`, 'acerto de primeira', trend)}
+                ${big('⏱️', UI.formatMinutes(s.minutes * 60000), 'de prática')}
+            </div>
+            <ul class="summary-extra">${extras.map(([pic, text]) => `<li><span aria-hidden="true">${pic}</span> ${text}</li>`).join('')}</ul>`;
+    },
+
+    _charts(stats, daily) {
         if (!window.Chart) return;
         Object.values(this.charts).forEach(c => c.destroy());
         this.charts = {};
@@ -153,48 +210,64 @@ const Admin = {
         Chart.defaults.font.family = 'Nunito, sans-serif';
         const pct = { y: { beginAtZero: true, max: 100, grid: { color: grid }, ticks: { callback: v => v + '%' } }, x: { grid: { display: false } } };
         const noAnim = document.body.classList.contains('low-stimulus') ? { animation: false } : {};
+        const dayLabel = iso => { const [, m, d] = iso.split('-'); return `${d}/${m}`; };
 
-        const areas = Object.entries(stats.areas_breakdown);
-        this.charts.areas = new Chart(document.getElementById('chart-areas'), {
-            type: 'bar',
-            data: {
-                labels: areas.map(([k]) => UI.AREA_LABELS[k] || k),
-                datasets: [{
-                    data: areas.map(([, a]) => a.accuracy ?? 0),
-                    backgroundColor: areas.map(([k]) => UI.AREA_COLORS[k]),
-                    borderRadius: 8,
-                }],
-            },
-            options: { responsive: true, maintainAspectRatio: false, scales: pct, plugins: { legend: { display: false },
-                tooltip: { callbacks: { label: c => areas[c.dataIndex][1].accuracy === null ? 'Sem registros' : `${c.raw}% · ${areas[c.dataIndex][1].sessions} sessões` } } }, ...noAnim },
-        });
+        // Evolução: um ponto por dia com atividade (média do dia), não um por sessão
+        const timelineEmpty = !daily.some(d => d.accuracy !== null);
+        document.getElementById('chart-timeline').parentElement.classList.toggle('hidden', timelineEmpty);
+        document.getElementById('timeline-empty').classList.toggle('hidden', !timelineEmpty);
+        if (!timelineEmpty) {
+            this.charts.timeline = new Chart(document.getElementById('chart-timeline'), {
+                type: 'line',
+                data: {
+                    labels: daily.map(d => dayLabel(d.date)),
+                    datasets: [{
+                        data: daily.map(d => d.accuracy),
+                        borderColor: '#4d74c9', backgroundColor: 'rgba(77,116,201,.12)',
+                        fill: true, tension: .3, spanGaps: true,
+                        pointRadius: daily.map(d => (d.accuracy === null ? 0 : 5)),
+                        pointHoverRadius: daily.map(d => (d.accuracy === null ? 0 : 7)),
+                    }],
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { ...pct, x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } } },
+                    plugins: { legend: { display: false }, tooltip: { filter: c => c.raw !== null, callbacks: {
+                        label: c => `${Math.round(c.raw)}% de acerto · ${daily[c.dataIndex].sessions} ${daily[c.dataIndex].sessions === 1 ? 'atividade' : 'atividades'}` } } }, ...noAnim },
+            });
+        }
 
-        this.charts.timeline = new Chart(document.getElementById('chart-timeline'), {
-            type: 'line',
-            data: {
-                labels: sessions.map(s => UI.formatDate(s.created_at)),
-                datasets: [{
-                    data: sessions.map(s => s.accuracy),
-                    borderColor: '#4d74c9', backgroundColor: 'rgba(77,116,201,.12)',
-                    fill: true, tension: .3, pointRadius: 4,
-                }],
-            },
-            options: { responsive: true, maintainAspectRatio: false, scales: { ...pct, x: { grid: { display: false }, ticks: { maxTicksLimit: 6 } } },
-                plugins: { legend: { display: false }, tooltip: { callbacks: {
-                    title: c => `${App.activities[sessions[c[0].dataIndex].activity_type]?.name || ''} · ${c[0].label}`,
-                    label: c => `${c.raw}% de acerto` } } }, ...noAnim },
-        });
+        // Áreas: só as que têm registros; as outras aparecem escritas embaixo
+        const all = Object.entries(stats.areas_breakdown);
+        const areas = all.filter(([, a]) => a.accuracy !== null && a.accuracy !== undefined);
+        const missing = all.filter(([, a]) => a.accuracy === null || a.accuracy === undefined).map(([k]) => UI.AREA_LABELS[k] || k);
+        const note = document.getElementById('areas-note');
+        note.textContent = !areas.length ? 'Nenhuma atividade no período.' : missing.length ? `Sem dados no período: ${missing.join(', ')}.` : '';
+        note.classList.toggle('hidden', !note.textContent);
+        document.getElementById('chart-areas').parentElement.classList.toggle('hidden', !areas.length);
+        if (areas.length) {
+            this.charts.areas = new Chart(document.getElementById('chart-areas'), {
+                type: 'bar',
+                data: {
+                    labels: areas.map(([k]) => UI.AREA_LABELS[k] || k),
+                    datasets: [{ data: areas.map(([, a]) => a.accuracy), backgroundColor: areas.map(([k]) => UI.AREA_COLORS[k]), borderRadius: 8 }],
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: pct, plugins: { legend: { display: false },
+                    tooltip: { callbacks: { label: c => `${c.raw}% · ${areas[c.dataIndex][1].sessions} sessões` } } }, ...noAnim },
+            });
+        }
 
         const acts = Object.values(stats.activities_breakdown);
-        this.charts.activities = new Chart(document.getElementById('chart-activities'), {
-            type: 'bar',
-            data: {
-                labels: acts.map(a => a.name),
-                datasets: [{ data: acts.map(a => a.accuracy), backgroundColor: acts.map(a => UI.AREA_COLORS[a.area]), borderRadius: 8 }],
-            },
-            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                scales: { x: pct.y, y: { grid: { display: false } } }, plugins: { legend: { display: false } }, ...noAnim },
-        });
+        document.getElementById('chart-activities').closest('.card').classList.toggle('hidden', !acts.length);
+        if (acts.length) {
+            this.charts.activities = new Chart(document.getElementById('chart-activities'), {
+                type: 'bar',
+                data: {
+                    labels: acts.map(a => a.name),
+                    datasets: [{ data: acts.map(a => a.accuracy), backgroundColor: acts.map(a => UI.AREA_COLORS[a.area]), borderRadius: 8 }],
+                },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    scales: { x: pct.y, y: { grid: { display: false } } }, plugins: { legend: { display: false } }, ...noAnim },
+            });
+        }
     },
 
     /** Emoções por dia: uma barra por dia, empilhando quantas vezes cada emoção foi escolhida. */
@@ -206,9 +279,9 @@ const Admin = {
         canvas.parentElement.classList.toggle('hidden', empty);
         document.getElementById('moods-empty').classList.toggle('hidden', !empty);
         if (empty) return;
-        // Com o período "Tudo" (90 dias) mostra só a partir do primeiro registro
+        // Começa no primeiro dia com registro (mantendo pelo menos uma semana visível)
         const first = moods.days.findIndex(d => Object.keys(d.counts).length);
-        const days = moods.days.slice(moods.days.length > 30 ? first : 0);
+        const days = moods.days.slice(Math.max(0, Math.min(first, moods.days.length - 7)));
         const label = iso => { const [, m, d] = iso.split('-'); return `${d}/${m}`; };
         const grid = getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
         const noAnim = document.body.classList.contains('low-stimulus') ? { animation: false } : {};
@@ -252,52 +325,93 @@ const Admin = {
 
     async shareWhatsApp() {
         try {
-            const q = this.days ? `&days=${this.days}` : '';
-            const s = await API.get(`/sessions/stats?profile_id=${this.pid}${q}`);
-            const period = this.days ? `últimos ${this.days} dias` : 'todo o período';
-            const text = `🦊 *Lumina: ${App.profile.name}* (${period})\n\n` +
-                `🧩 Atividades: ${s.total_activities}\n🎯 Acerto de primeira: ${s.accuracy}%\n` +
-                `⭐ Estrelas: ${s.total_stars}\n⏱️ Tempo de prática: ${UI.formatMinutes(s.total_time)}`;
+            const s = this.summary || await API.get(`/summary/${this.pid}?${this.days ? `days=${this.days}` : 'all_time=true'}&tz=${new Date().getTimezoneOffset()}`);
+            const text = `🦊 *Lumina: ${App.profile.name}*\n\n${s.headline}\n\n` +
+                `🧩 Atividades: ${s.activities}\n🎯 Acerto de primeira: ${s.accuracy === null ? '–' : Math.round(s.accuracy) + '%'}\n` +
+                `⏱️ Tempo de prática: ${UI.formatMinutes(s.minutes * 60000)}\n⭐ Estrelas: ${s.stars}`;
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
         } catch (err) { this._fail(err); }
     },
 
     // ---------- Sessões (nível de ajuda) ----------
+    /** Dia local de uma data ISO do servidor (UTC). */
+    _day(iso) {
+        const d = new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z');
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    },
+
+    _dayTitle(key) {
+        const today = this._day(new Date().toISOString());
+        const yesterday = this._day(new Date(Date.now() - 86400000).toISOString());
+        if (key === today) return 'Hoje';
+        if (key === yesterday) return 'Ontem';
+        const [y, m, d] = key.split('-').map(Number);
+        const date = new Date(y, m - 1, d);
+        const weekday = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+        return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}, ${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`;
+    },
+
+    // ---------- Sessões (agrupadas por dia; detalhes ao tocar) ----------
     async loadSessions() {
         const box = document.getElementById('sessions-list');
         try {
-            const sessions = await API.get(`/sessions?profile_id=${this.pid}&limit=30`);
+            const sessions = await API.get(`/sessions?profile_id=${this.pid}&limit=60`);
             if (!sessions.length) { box.innerHTML = UI.empty('🕒', 'Nenhuma sessão registrada ainda.'); return; }
-            box.innerHTML = sessions.map(s => {
-                const a = App.activities[s.activity_type] || {};
-                return `<div class="row">
-                    <span class="pic" aria-hidden="true">${UI.pic(a.icon || '⭐')}</span>
-                    <div class="grow"><b>${UI.esc(a.name || s.activity_type)}</b> ${s.is_practice ? '<span class="pill info">treino</span>' : ''}
-                        ${s.reward ? `<span class="pill ok">🎁 ${UI.esc(s.reward)}</span>` : ''}
-                        ${s.timed_out ? '<span class="pill warn">⏳ tempo acabou</span>' : ''}
-                        <div class="meta">${UI.formatDate(s.created_at)} · nível ${s.level} · ${s.accuracy}% de acerto · ${'⭐'.repeat(s.stars) || 'sem estrelas'}</div></div>
-                    <label class="sr-only" for="help-${s.id}">Ajuda dada</label>
-                    <select id="help-${s.id}" data-help="${s.id}">
-                        ${Object.entries(UI.HELP_LEVELS).map(([k, v]) => `<option value="${k}" ${k === (s.help_level || '') ? 'selected' : ''} ${k === '' ? 'disabled' : ''}>${v}</option>`).join('')}
-                    </select>
-                    <button class="btn btn-soft btn-small" data-note="${s.id}">📝 Observação</button>
-                </div>`;
+            const days = [];
+            sessions.forEach(s => {
+                const key = this._day(s.created_at);
+                if (!days.length || days[days.length - 1].key !== key) days.push({ key, items: [] });
+                days[days.length - 1].items.push(s);
+            });
+            const time = iso => UI.formatDate(iso).split(' ')[1];
+            box.innerHTML = days.map(day => {
+                const counted = day.items.filter(s => !s.is_practice);
+                const avg = counted.length ? Math.round(counted.reduce((t, s) => t + s.accuracy, 0) / counted.length) : null;
+                const stars = day.items.reduce((t, s) => t + (s.stars || 0), 0);
+                return `<section class="day-group">
+                    <h2 class="day-title">${this._dayTitle(day.key)}
+                        <span class="day-meta">${day.items.length} ${day.items.length === 1 ? 'atividade' : 'atividades'}${avg === null ? '' : ` · ${avg}% de acerto`} · <span aria-hidden="true">⭐</span> ${stars}</span></h2>
+                    ${day.items.map(s => {
+                        const a = App.activities[s.activity_type] || {};
+                        return `<details class="session-item">
+                            <summary>
+                                <span class="pic" aria-hidden="true">${UI.pic(a.icon || '⭐')}</span>
+                                <span class="grow"><b>${UI.esc(a.name || s.activity_type)}</b>
+                                    <span class="meta">${time(s.created_at)} · ${s.accuracy}% · ${s.stars ? `${s.stars} ${s.stars === 1 ? 'estrela' : 'estrelas'}` : 'sem estrelas'}</span>
+                                    ${s.is_practice || !s.help_level ? `<span class="session-pills">${s.is_practice ? '<span class="pill info">treino</span>' : ''}${s.help_level ? '' : '<span class="pill warn">ajuda não registrada</span>'}</span>` : ''}</span>
+                            </summary>
+                            <div class="session-body">
+                                <p class="meta">Nível ${s.level} · ${s.correct} de ${s.total_questions} de primeira · ${UI.formatMinutes(s.total_time)}
+                                    ${s.reward ? ` · <span class="pill ok">🎁 ${UI.esc(s.reward)}</span>` : ''}
+                                    ${s.timed_out ? ' · <span class="pill warn">⏳ tempo acabou</span>' : ''}</p>
+                                <div class="session-actions">
+                                    <label class="sr-only" for="help-${s.id}">Ajuda dada</label>
+                                    <select id="help-${s.id}" data-help="${s.id}">
+                                        ${Object.entries(UI.HELP_LEVELS).map(([k, v]) => `<option value="${k}" ${k === (s.help_level || '') ? 'selected' : ''} ${k === '' ? 'disabled' : ''}>${v}</option>`).join('')}
+                                    </select>
+                                    <button class="btn btn-soft btn-small" data-note="${s.id}"><span aria-hidden="true">📝</span> Observação</button>
+                                </div>
+                            </div>
+                        </details>`;
+                    }).join('')}
+                </section>`;
             }).join('');
             box.querySelectorAll('[data-help]').forEach(sel => sel.addEventListener('change', async () => {
                 try {
                     await API.patch(`/sessions/${sel.dataset.help}`, { help_level: sel.value });
+                    sel.closest('details').querySelector('summary .pill.warn')?.remove();
                     UI.toast('Nível de ajuda salvo', 'success');
                 } catch (err) { this._fail(err); }
             }));
             box.querySelectorAll('[data-note]').forEach(b => b.addEventListener('click', () => {
-                const row = b.closest('.row');
-                if (row.querySelector('form')) return;
+                const body = b.closest('.session-body');
+                if (body.querySelector('form')) return;
                 const form = document.createElement('form');
-                form.style.cssText = 'flex-basis:100%;display:flex;gap:10px;flex-wrap:wrap';
+                form.className = 'session-note';
                 form.innerHTML = `<label class="sr-only" for="sn-${b.dataset.note}">Observação</label>
-                    <textarea id="sn-${b.dataset.note}" class="input" style="flex:1;min-width:220px" maxlength="2000" required placeholder="Como foi esta sessão?"></textarea>
+                    <textarea id="sn-${b.dataset.note}" class="input" maxlength="2000" required placeholder="Como foi esta sessão?"></textarea>
                     <button class="btn btn-small" type="submit">Salvar no diário</button>`;
-                row.appendChild(form);
+                body.appendChild(form);
                 form.querySelector('textarea').focus();
                 form.addEventListener('submit', async e => {
                     e.preventDefault();
@@ -315,16 +429,38 @@ const Admin = {
     async _updateRecsCount() {
         try {
             const recs = await API.get(`/ai/recommendations/${this.pid}`);
-            const pill = document.getElementById('recs-count');
-            pill.textContent = recs.length;
-            pill.classList.toggle('hidden', !recs.length);
+            const count = this._groupRecs(recs).length;
+            document.querySelectorAll('.recs-count').forEach(pill => {
+                pill.textContent = count;
+                pill.classList.toggle('hidden', !count);
+            });
             return recs;
         } catch { return []; }
     },
 
+    /** Padrões iguais em várias atividades viram um cartão só, listando as atividades. */
+    _groupRecs(recs) {
+        const out = [];
+        const byType = {};
+        recs.forEach(r => {
+            const type = r.kind === 'pattern' ? r.key.split(':')[2] : null;
+            if (!type) { out.push({ ...r, keys: [r.key], acts: [r.activity] }); return; }
+            if (!byType[type]) {
+                byType[type] = { ...r, keys: [], acts: [], reasons: [], title: r.title.split(': ').slice(1).join(': ') || r.title };
+                out.push(byType[type]);
+            }
+            const g = byType[type];
+            g.keys.push(r.key);
+            g.acts.push(r.activity);
+            r.reasons.forEach(x => { if (!g.reasons.includes(x)) g.reasons.push(x); });
+        });
+        // Um padrão numa atividade só mantém o título original ("Atividade: descrição")
+        return out.map(g => (g.kind === 'pattern' && g.keys.length === 1 ? { ...recs.find(r => r.key === g.keys[0]), keys: g.keys, acts: g.acts } : g));
+    },
+
     async loadRecs() {
         const box = document.getElementById('recs-list');
-        const recs = await this._updateRecsCount();
+        const recs = this._groupRecs(await this._updateRecsCount());
         if (!recs.length) {
             box.innerHTML = UI.empty('✅', 'Nenhuma recomendação pendente. Novas sugestões aparecem conforme a criança pratica.');
             return;
@@ -332,6 +468,7 @@ const Admin = {
         const icons = { positive: '📈', attention: '🤝', pattern: '🔎', suggestion: '⭐', general: '💡' };
         box.innerHTML = recs.map((r, i) => {
             const act = App.activities[r.activity];
+            const many = r.keys.length > 1;
             const sameLevel = r.kind === 'level' && r.suggested_level === r.current_level;
             const levelSelect = r.kind === 'level' && act && !sameLevel
                 ? `<label class="sr-only" for="rec-level-${i}">Nível</label>
@@ -340,23 +477,32 @@ const Admin = {
                    </select>
                    <button class="btn btn-soft btn-small" data-rec="${i}" data-action="adjust">✏️ Usar este nível</button>` : '';
             const acceptLabel = sameLevel ? '👍 Ciente, vou dar mais apoio' : r.kind === 'level' ? `✅ Aceitar nível ${r.suggested_level}` : r.kind === 'activity' ? '⭐ Destacar para a criança' : '👍 Ciente';
+            const actChips = many ? `<div class="chip-row" style="margin-bottom:10px">${r.acts.map(a => {
+                const info = App.activities[a] || {};
+                return `<span class="chip"><span class="pic" aria-hidden="true">${UI.pic(info.icon || '⭐')}</span>${UI.esc(info.name || a)}</span>`;
+            }).join('')}</div>` : '';
             return `<div class="card rec-card ${r.type}">
-                <h2><span aria-hidden="true">${icons[r.type] || '💡'}</span>${act ? `<span aria-hidden="true">${act.icon}</span>` : ''} ${UI.esc(r.title)}</h2>
+                <h2><span aria-hidden="true">${icons[r.type] || '💡'}</span>${act && !many ? `<span aria-hidden="true">${act.icon}</span>` : ''} ${UI.esc(r.title)}${many ? ` <span class="pill info">${r.keys.length} atividades</span>` : ''}</h2>
+                ${actChips}
                 <ul>${r.reasons.map(x => `<li>${UI.esc(x)}</li>`).join('')}</ul>
                 ${r.kind === 'activity' ? `<p class="shared-note" style="margin-bottom:10px">${UI.esc(r.message)}</p>` : ''}
                 <div class="rec-actions">
                     <button class="btn btn-small" data-rec="${i}" data-action="accept">${acceptLabel}</button>
                     ${levelSelect}
-                    <button class="btn btn-outline btn-small" data-rec="${i}" data-action="dismiss">✖️ Descartar</button>
+                    <button class="btn btn-outline btn-small" data-rec="${i}" data-action="dismiss">✖️ Descartar${many ? ' todas' : ''}</button>
                 </div></div>`;
         }).join('');
         box.querySelectorAll('[data-rec]').forEach(b => b.addEventListener('click', async () => {
             const r = recs[Number(b.dataset.rec)];
-            const body = { key: r.key, activity_type: r.activity, action: b.dataset.action };
-            if (b.dataset.action === 'adjust') body.level = Number(document.getElementById(`rec-level-${b.dataset.rec}`).value);
+            const action = b.dataset.action;
+            const level = action === 'adjust' ? Number(document.getElementById(`rec-level-${b.dataset.rec}`).value) : undefined;
             try {
-                await API.post(`/ai/recommendations/${this.pid}/decide`, body);
-                UI.toast({ accept: 'Recomendação aceita', adjust: 'Nível ajustado', dismiss: 'Recomendação descartada' }[b.dataset.action], 'success');
+                for (let k = 0; k < r.keys.length; k++) {
+                    const body = { key: r.keys[k], activity_type: r.acts[k], action };
+                    if (level) body.level = level;
+                    await API.post(`/ai/recommendations/${this.pid}/decide`, body);
+                }
+                UI.toast({ accept: 'Recomendação aceita', adjust: 'Nível ajustado', dismiss: 'Recomendação descartada' }[action], 'success');
                 this.loadRecs();
             } catch (err) { this._fail(err); }
         }));
@@ -439,7 +585,7 @@ const Admin = {
                     <div class="grow"><b>${UI.esc(a.name || g.activity_type)}</b>: ${UI.esc(g.description || '')}
                         ${g.completed ? '<span class="pill ok">concluída</span>' : ''}
                         <div class="meta">${g.current_value}${unit[g.target_type]} de ${g.target_value}${unit[g.target_type]}</div>
-                        <div class="progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div></div>
+                        <div class="progress" role="progressbar" aria-label="Progresso da meta" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div></div>
                     <button class="btn btn-outline btn-small" data-del-goal="${g.id}" aria-label="Apagar meta">🗑️</button>
                 </div>`;
             }).join('') : UI.empty('🎯', 'Nenhuma meta ainda. Metas abertas também influenciam as recomendações.');
