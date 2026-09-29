@@ -50,7 +50,7 @@ const Admin = {
         document.querySelectorAll('[data-theme-choice]').forEach(b => b.addEventListener('click', () => ThemeController.apply(b.dataset.themeChoice)));
         document.getElementById('set-font').addEventListener('change', e => ThemeController.setLargeFont(e.target.checked));
         [['set-sound', 'sound_enabled'], ['set-voice', 'voice_enabled'], ['set-low', 'low_stimulus'],
-            ['set-tokens', 'token_board'], ['set-requests', 'request_board']].forEach(([id, key]) =>
+            ['set-tokens', 'token_board'], ['set-requests', 'request_board'], ['set-mood', 'mood_checkin']].forEach(([id, key]) =>
             document.getElementById(id).addEventListener('change', e => this.saveSetting(key, e.target.checked)));
         document.getElementById('reward-form').addEventListener('submit', e => this.addReward(e));
 
@@ -116,10 +116,11 @@ const Admin = {
     async loadDashboard() {
         const q = this.days ? `&days=${this.days}` : '';
         try {
-            const [stats, sessions, requests] = await Promise.all([
+            const [stats, sessions, requests, moods] = await Promise.all([
                 API.get(`/sessions/stats?profile_id=${this.pid}${q}`),
                 API.get(`/sessions?profile_id=${this.pid}&limit=60&include_practice=false${q}`),
                 API.get(`/requests/${this.pid}?limit=1${q}`),
+                API.get(`/moods/${this.pid}?days=${this.days || 90}&limit=1&tz=${new Date().getTimezoneOffset()}`),
             ]);
             const stat = (pic, label, value) =>
                 `<div class="stat"><span class="pic" aria-hidden="true">${pic}</span><div><div class="label">${label}</div><div class="value">${value}</div></div></div>`;
@@ -129,14 +130,17 @@ const Admin = {
                 stat('⏱️', 'Tempo de prática', UI.formatMinutes(stats.total_time)) +
                 stat('⭐', 'Estrelas', stats.total_stars) +
                 stat('🔁', 'Tentativas por questão', stats.avg_attempts) +
-                stat('💬', 'Pedidos na prancha', requests.total);
+                stat('💬', 'Pedidos na prancha', requests.total) +
+                stat('🙂', 'Emoções registradas', moods.total);
             this._charts(stats, sessions.slice().reverse());
+            this._moodChart(moods);
         } catch (err) { this._fail(err); }
     },
 
     _charts(stats, sessions) {
         if (!window.Chart) return;
         Object.values(this.charts).forEach(c => c.destroy());
+        this.charts = {};
         const css = getComputedStyle(document.documentElement);
         const text = css.getPropertyValue('--text-soft').trim();
         const grid = css.getPropertyValue('--border').trim();
@@ -185,6 +189,41 @@ const Admin = {
             },
             options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
                 scales: { x: pct.y, y: { grid: { display: false } } }, plugins: { legend: { display: false } }, ...noAnim },
+        });
+    },
+
+    /** Emoções por dia: uma barra por dia, empilhando quantas vezes cada emoção foi escolhida. */
+    _moodChart(moods) {
+        if (!window.Chart) return;
+        // _charts() acabou de destruir os gráficos anteriores, inclusive este
+        const canvas = document.getElementById('chart-moods');
+        const empty = !moods.total;
+        canvas.parentElement.classList.toggle('hidden', empty);
+        document.getElementById('moods-empty').classList.toggle('hidden', !empty);
+        if (empty) return;
+        // Com o período "Tudo" (90 dias) mostra só a partir do primeiro registro
+        const first = moods.days.findIndex(d => Object.keys(d.counts).length);
+        const days = moods.days.slice(moods.days.length > 30 ? first : 0);
+        const label = iso => { const [, m, d] = iso.split('-'); return `${d}/${m}`; };
+        const grid = getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
+        const noAnim = document.body.classList.contains('low-stimulus') ? { animation: false } : {};
+        this.charts.moods = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: days.map(d => label(d.date)),
+                datasets: App.moodOptions.map(m => ({
+                    label: `${m.icon} ${m.label}`,
+                    data: days.map(d => d.counts[m.key] || 0),
+                    backgroundColor: m.color,
+                    borderRadius: 4,
+                })),
+            },
+            options: { responsive: true, maintainAspectRatio: false,
+                scales: { x: { stacked: true, grid: { display: false }, ticks: { maxTicksLimit: 10 } },
+                    y: { stacked: true, beginAtZero: true, grid: { color: grid }, ticks: { precision: 0 } } },
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, filter: item =>
+                    days.some(d => d.counts[App.moodOptions[item.datasetIndex].key]) } },
+                    tooltip: { filter: c => c.raw > 0 } }, ...noAnim },
         });
     },
 
@@ -322,6 +361,7 @@ const Admin = {
     async loadDiary() {
         const box = document.getElementById('diary-list');
         this.loadRequests();
+        this.loadMoods();
         try {
             const notes = await API.get(`/notes/${this.pid}`);
             box.innerHTML = notes.length ? notes.map(n => `
@@ -349,6 +389,20 @@ const Admin = {
                     <div class="grow"><b>${UI.esc(r.label)}</b>
                         <div class="meta">${UI.formatDate(r.created_at)}${r.context ? ' · durante ' + UI.esc(r.context) : ''}</div></div>
                 </div>`).join('') : UI.empty('💬', 'Nenhum pedido nos últimos 7 dias. Os pedidos feitos no botão "Pedir" aparecem aqui.');
+        } catch (err) { this._fail(err); }
+    },
+
+    async loadMoods() {
+        try {
+            const data = await API.get(`/moods/${this.pid}?days=7&limit=10&tz=${new Date().getTimezoneOffset()}`);
+            document.getElementById('moods-summary').innerHTML = data.summary.map(m =>
+                `<span class="chip"><span class="pic" aria-hidden="true">${UI.pic(m.icon)}</span>${UI.esc(m.label)} <b>× ${m.count}</b></span>`).join('');
+            document.getElementById('moods-list').innerHTML = data.items.length ? data.items.map(m => `
+                <div class="row">
+                    <span class="pic" aria-hidden="true">${UI.pic(m.icon)}</span>
+                    <div class="grow"><b>${UI.esc(m.label)}</b>
+                        <div class="meta">${UI.formatDate(m.created_at)} · ${m.moment === 'livre' ? 'contou pelo botão "Como estou?"' : 'ao entrar na área da criança'}</div></div>
+                </div>`).join('') : UI.empty('🙂', 'Nenhuma emoção registrada nos últimos 7 dias. Ela aparece quando a criança responde "Como você está se sentindo?".');
         } catch (err) { this._fail(err); }
     },
 
@@ -594,7 +648,8 @@ const Admin = {
         document.getElementById('set-font').checked = document.documentElement.classList.contains('font-large');
         document.getElementById('set-tokens').checked = s.token_board !== false;
         document.getElementById('set-requests').checked = s.request_board !== false;
-        ['set-sound', 'set-voice', 'set-low', 'set-tokens', 'set-requests'].forEach(id => { document.getElementById(id).disabled = !this.pid; });
+        document.getElementById('set-mood').checked = s.mood_checkin !== false;
+        ['set-sound', 'set-voice', 'set-low', 'set-tokens', 'set-requests', 'set-mood'].forEach(id => { document.getElementById(id).disabled = !this.pid; });
         document.getElementById('reward-form').classList.toggle('hidden', !this.pid);
         if (this.pid) {
             this._renderRewardOptions();

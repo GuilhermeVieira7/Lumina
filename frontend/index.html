@@ -233,6 +233,30 @@
     </div>
 </section>
 
+<!-- ============ CRIANÇA: COMO ESTOU ME SENTINDO? ============ -->
+<section id="mood-screen" class="screen" aria-labelledby="mood-title">
+    <div class="wrap">
+        <div id="mood-choose">
+            <h1 id="mood-title" class="select-title">Como você está se sentindo?</h1>
+            <p class="select-sub">Toque no rosto que parece com você agora.</p>
+            <div id="mood-grid" class="mood-grid"></div>
+            <p style="text-align:center;margin-top:20px">
+                <button class="btn btn-outline" id="mood-skip"><span class="ico" aria-hidden="true">▶️</span> Agora não</button>
+            </p>
+        </div>
+        <div id="mood-said" class="mood-said hidden" aria-live="assertive">
+            <div id="mood-said-pic" class="pic" aria-hidden="true"></div>
+            <p id="mood-said-text"></p>
+            <p id="mood-said-note" class="shared-note"></p>
+            <div class="mood-actions">
+                <button class="btn btn-success" id="mood-go"><span class="ico" aria-hidden="true">▶️</span> Continuar</button>
+                <button class="btn btn-soft hidden" id="mood-help"><span class="ico" aria-hidden="true">🙋</span> Pedir ajuda</button>
+                <button class="btn btn-outline" id="mood-again"><span class="ico" aria-hidden="true">🔁</span> Trocar</button>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- ============ CRIANÇA: ESCOLHA DO PRÊMIO (quadro de fichas) ============ -->
 <section id="reward-screen" class="screen" aria-labelledby="reward-title">
     <div class="wrap">
@@ -297,6 +321,8 @@
                 <div class="card"><h3>Acerto por área de habilidade</h3><div class="chart-box"><canvas id="chart-areas" aria-label="Gráfico de acerto por área"></canvas></div></div>
                 <div class="card"><h3>Evolução no período</h3><div class="chart-box"><canvas id="chart-timeline" aria-label="Gráfico de evolução"></canvas></div></div>
                 <div class="card"><h3>Acerto por atividade</h3><div class="chart-box"><canvas id="chart-activities" aria-label="Gráfico por atividade"></canvas></div></div>
+                <div class="card"><h3>Como a criança se sentiu</h3><div class="chart-box"><canvas id="chart-moods" aria-label="Gráfico das emoções por dia"></canvas></div>
+                    <p id="moods-empty" class="shared-note hidden">Nenhuma emoção registrada no período. Ela aparece quando a criança responde "Como você está se sentindo?".</p></div>
             </div>
         </div>
 
@@ -314,6 +340,11 @@
 
         <!-- Diário -->
         <div class="tab-panel" id="tab-diary" role="tabpanel">
+            <div class="card" style="margin-bottom:16px">
+                <h3><span aria-hidden="true">🙂</span> Como a criança se sentiu (últimos 7 dias)</h3>
+                <div id="moods-summary" class="chip-row"></div>
+                <div id="moods-list" class="list" style="margin-top:12px"></div>
+            </div>
             <div class="card" style="margin-bottom:16px">
                 <h3><span aria-hidden="true">💬</span> Pedidos da criança (últimos 7 dias)</h3>
                 <div id="requests-summary" class="chip-row"></div>
@@ -442,6 +473,11 @@
                     </form>
                 </div>
                 <div class="card">
+                    <h3><span aria-hidden="true">🙂</span> Como estou me sentindo?</h3>
+                    <div class="switch-row"><label for="set-mood">Ao entrar na área da criança, perguntar como ela está se sentindo</label><input type="checkbox" id="set-mood"></div>
+                    <p class="shared-note" style="margin-top:10px">A criança toca num rosto (feliz, calmo, triste, bravo, com medo ou cansado). A escolha aparece no Diário, no gráfico do Progresso e no relatório PDF. Ela também pode responder quando quiser, pelo botão na tela inicial.</p>
+                </div>
+                <div class="card">
                     <h3><span aria-hidden="true">💬</span> Prancha de pedidos</h3>
                     <div class="switch-row"><label for="set-requests">Mostrar o botão "Pedir" na área da criança</label><input type="checkbox" id="set-requests"></div>
                     <p class="shared-note" style="margin:10px 0 8px">Pedidos disponíveis (toque para ligar ou desligar). Cada pedido é falado em voz alta e aparece no Diário.</p>
@@ -533,6 +569,7 @@
 <script src="/js/child.js"></script>
 <script src="/js/activities.js"></script>
 <script src="/js/board.js"></script>
+<script src="/js/mood.js"></script>
 <script src="/js/admin.js"></script>
 <script src="/js/app.js"></script>
 </body>

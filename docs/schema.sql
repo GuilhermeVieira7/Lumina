@@ -91,6 +91,19 @@ CREATE TABLE goals (
 ;
 CREATE INDEX ix_goals_id ON goals (id);
 
+CREATE TABLE mood_checks (
+	id SERIAL NOT NULL, 
+	profile_id INTEGER NOT NULL, 
+	mood VARCHAR(20) NOT NULL, 
+	moment VARCHAR(20), 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(profile_id) REFERENCES profiles (id)
+)
+
+;
+CREATE INDEX ix_mood_checks_id ON mood_checks (id);
+
 CREATE TABLE profile_access (
 	id SERIAL NOT NULL, 
 	profile_id INTEGER NOT NULL, 
@@ -180,6 +193,7 @@ CREATE TABLE settings (
 	mastery_sessions INTEGER, 
 	token_board BOOLEAN, 
 	request_board BOOLEAN, 
+	mood_checkin BOOLEAN, 
 	rewards_json TEXT, 
 	requests_json TEXT, 
 	PRIMARY KEY (id), 

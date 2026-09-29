@@ -79,6 +79,7 @@ const Child = {
         html += enabled.map(activityTile).join('');
         if (enabled.length) html += special('data-free="1"', '🎮', 'Brincar livre');
         html += special('data-open="timer"', '⏳', 'Timer');
+        if (App.moodOptions.length) html += special('data-open="mood"', '🙂', 'Como estou?');
         html += special('data-open="progress"', '🌟', 'Conquistas');
         tiles.innerHTML = html || UI.empty('🧩', 'Nenhuma atividade liberada. Peça a um adulto.');
 
@@ -93,6 +94,7 @@ const Child = {
         tiles.querySelector('[data-open="routine"]')?.addEventListener('click', () => this.showRoutine());
         tiles.querySelector('[data-open="progress"]')?.addEventListener('click', () => this.showProgress());
         tiles.querySelector('[data-open="timer"]')?.addEventListener('click', () => TimerScreen.open());
+        tiles.querySelector('[data-open="mood"]')?.addEventListener('click', () => Mood.open('livre'));
     },
 
     async showRoutine() {

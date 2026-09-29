@@ -10,6 +10,7 @@ const App = {
     activities: {},   // metadados das atividades (nome, ícone, área)
     requestOptions: [], // pedidos possíveis da prancha
     rewardOptions: [],  // prêmios sugeridos para o quadro de fichas
+    moodOptions: [],    // emoções de "Como estou me sentindo?"
 
     async init() {
         ThemeController.init();
@@ -47,10 +48,13 @@ const App = {
 
     async loadSession() {
         this.user = await API.get('/auth/me');
-        const [list, options] = await Promise.all([API.get('/activities'), API.get('/requests/options')]);
+        const [list, options, moods] = await Promise.all([
+            API.get('/activities'), API.get('/requests/options'), API.get('/moods/options'),
+        ]);
         this.activities = Object.fromEntries(list.map(a => [a.type, a]));
         this.requestOptions = options.requests;
         this.rewardOptions = options.rewards;
+        this.moodOptions = moods;
         await this.loadProfiles();
 
         if (!this.profiles.length && this.user.role !== 'therapist') {
@@ -97,7 +101,7 @@ const App = {
         try {
             this.settings = await API.get(`/settings/${profile.id}`);
         } catch {
-            this.settings = { sound_enabled: true, voice_enabled: false, low_stimulus: false, token_board: false, request_board: false };
+            this.settings = { sound_enabled: true, voice_enabled: false, low_stimulus: false, token_board: false, request_board: false, mood_checkin: false };
         }
         this.applySettings();
         if (rerender) this.renderSelect();
@@ -115,7 +119,8 @@ const App = {
             UI.toast('Escolha uma criança primeiro', 'error');
             return;
         }
-        Child.home();
+        if (Mood.enabled && this.moodOptions.length) Mood.open('entrada');
+        else Child.home();
     },
 
     async enterAdult() {

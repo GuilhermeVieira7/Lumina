@@ -49,7 +49,7 @@ const UI = {
         '🍎', '🍌', '🥤', '🌳', '🚗', '🚂', '🐶', '🐱', '📚', '⭐', '🎮', '🦖'],
 
     // Telas da criança: nelas aparece o botão "Pedir" e não há funções de adulto
-    CHILD_SCREENS: ['child-home', 'activity-screen', 'finish-screen', 'routine-screen', 'progress-screen', 'timer-screen', 'reward-screen'],
+    CHILD_SCREENS: ['child-home', 'activity-screen', 'finish-screen', 'routine-screen', 'progress-screen', 'timer-screen', 'reward-screen', 'mood-screen'],
 
     esc(value) {
         return String(value ?? '').replace(/[&<>"']/g, c => (

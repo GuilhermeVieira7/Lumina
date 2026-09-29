@@ -23,7 +23,7 @@ from auth import create_demo_user
 
 from routers import (
     auth, profiles, activities, sessions, recommendations, achievements, goals, settings,
-    notes, routine, plans, access, requests,
+    notes, routine, plans, access, requests, moods,
 )
 
 # ---- Criar tabelas ----
@@ -84,6 +84,7 @@ app.include_router(routine.router)
 app.include_router(plans.router)
 app.include_router(access.router)
 app.include_router(requests.router)
+app.include_router(moods.router)
 
 # ---- Servir Frontend Estatico ----
 frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")

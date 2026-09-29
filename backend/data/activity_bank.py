@@ -163,7 +163,7 @@ ACTIVITY_BANK = {
             ],
             2: [
                 {"question": "Como se sente ao ganhar um presente?", "type": "shape", "correct": "😊", "options": ["😊", "😢", "😠"]},
-                {"question": "Como se sente quando está cansado?",  "type": "shape", "correct": "😴", "options": ["😊", "😢", "😴"]},
+                {"question": "Como se sente quando está cansado?",  "type": "shape", "correct": "🥱", "options": ["😊", "😢", "🥱"]},
                 {"question": "Como se sente ao brincar com amigos?","type": "shape", "correct": "😄", "options": ["😄", "😢", "😠"]},
                 {"question": "Como se sente quando não pode sair?", "type": "shape", "correct": "😢", "options": ["😊", "😢", "😐"]},
             ],

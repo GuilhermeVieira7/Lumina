@@ -33,80 +33,86 @@ ATTRIBUTION = (
     "Licença: CC BY-NC-SA. Propriedade: Governo de Aragão (Espanha)."
 )
 
-# emoji usado no sistema -> palavra de busca no ARASAAC (e "id" para fixar um pictograma)
+# emoji usado no sistema -> palavra de busca no ARASAAC.
+# "id" fixa um pictograma já conferido; "avoid" lista pictogramas que a busca
+# encontrou mas não mostram o que o emoji quer dizer (ex.: "cachorro" trazia
+# um cachorro-quente). A busca em português do ARASAAC usa muitas palavras de
+# Portugal (comboio, bolacha, pequeno-almoço).
 CATALOG = {
     # Rotina
-    "🌅": {"term": "acordar"},
-    "🪥": {"term": "escovar os dentes"},
-    "🚿": {"term": "chuveiro"},
-    "🛁": {"term": "tomar banho"},
-    "👕": {"term": "vestir"},
-    "🥣": {"term": "tomar o café da manhã"},
-    "🍽️": {"term": "almoçar"},
-    "🏫": {"term": "escola"},
-    "🎒": {"term": "mochila"},
-    "📚": {"term": "livro"},
-    "✏️": {"term": "lápis"},
-    "⭐": {"term": "estrela"},
-    "🧸": {"term": "brinquedo"},
-    "⚽": {"term": "bola"},
-    "🎨": {"term": "pintar"},
-    "🎵": {"term": "música"},
-    "📺": {"term": "televisão"},
-    "🌳": {"term": "parque"},
-    "🚗": {"term": "carro"},
-    "🛒": {"term": "supermercado"},
-    "👨‍👩‍👧": {"term": "família"},
-    "🩺": {"term": "médico"},
-    "🧩": {"term": "quebra-cabeça"},
-    "😴": {"term": "dormir"},
-    "🌙": {"term": "noite"},
+    "🌅": {"term": "acordar", "id": 8989},
+    "🪥": {"term": "escovar os dentes", "id": 2326},
+    "🚿": {"term": "chuveiro", "id": 2370},
+    "🛁": {"term": "tomar banho", "id": 6058},
+    "👕": {"term": "vestir", "id": 6627},
+    "🥣": {"term": "pequeno-almoço", "avoid": [37263]},
+    "🍽️": {"term": "almoçar", "id": 28206},
+    "🏫": {"term": "escola", "id": 32446},
+    "🎒": {"term": "mochila", "id": 2475},
+    "📚": {"term": "livro", "id": 25191},
+    "✏️": {"term": "lápis", "id": 2440},
+    "⭐": {"term": "estrela", "avoid": [2752]},
+    "🧸": {"term": "brinquedo", "id": 9813},
+    "⚽": {"term": "bola", "id": 3241},
+    "🎨": {"term": "pintar", "id": 2348},
+    "🎵": {"term": "música", "id": 24791},
+    "📺": {"term": "televisão", "id": 25498},
+    "🌳": {"term": "parque", "id": 39572},
+    "🚗": {"term": "carro", "id": 2339},
+    "🛒": {"term": "supermercado", "id": 3389},
+    "👨‍👩‍👧": {"term": "família", "id": 38351},
+    "🩺": {"term": "médico", "id": 6561},
+    "🧩": {"term": "quebra-cabeça", "id": 2540},
+    "😴": {"term": "dormir", "id": 6479},
+    "🌙": {"term": "noite", "id": 26997},
     "🚽": {"term": "banheiro"},
     # Prancha de pedidos
-    "⏸️": {"term": "descansar"},
-    "🙋": {"term": "ajuda"},
-    "🥤": {"term": "água"},
-    "🥪": {"term": "comer"},
-    "🤗": {"term": "abraço"},
-    "🔇": {"term": "silêncio"},
-    "🥱": {"term": "cansado"},
-    "🤕": {"term": "dor"},
-    "✋": {"term": "terminar"},
-    "👍": {"term": "sim"},
-    "👎": {"term": "não"},
+    "⏸️": {"term": "descansar", "id": 16643},
+    "🙋": {"term": "ajuda", "id": 12252},
+    "🥤": {"term": "água", "id": 32464},
+    "🥪": {"term": "comer", "id": 6456},
+    "🤗": {"term": "abraço", "id": 4550},
+    "🔇": {"term": "silêncio", "id": 5936},
+    "🥱": {"term": "cansado", "id": 35537},
+    "🤕": {"term": "dor", "id": 2367},
+    "✋": {"term": "terminar", "id": 5358},
+    "👍": {"term": "sim", "id": 5584},
+    "👎": {"term": "não", "id": 5526},
     # Prêmios do quadro de fichas
-    "🍪": {"term": "biscoito"},
+    "🍪": {"term": "bolacha", "avoid": [8295]},
     "🛝": {"term": "escorregador"},
-    "🫧": {"term": "bolhas de sabão"},
-    "📱": {"term": "tablet"},
-    "🚲": {"term": "bicicleta"},
+    "🫧": {"term": "bolas de sabão", "avoid": [36525]},
+    "📱": {"term": "tablet", "id": 28099},
+    "🚲": {"term": "bicicleta", "id": 6935},
     # Atividades e figuras das questões
-    "🔢": {"term": "números"},
-    "➕": {"term": "somar"},
-    "🔤": {"term": "alfabeto"},
-    "⏰": {"term": "relógio"},
-    "💰": {"term": "dinheiro"},
-    "📦": {"term": "caixa"},
-    "📅": {"term": "agenda"},
-    "🎮": {"term": "brincar"},
-    "⏳": {"term": "esperar"},
-    "😊": {"term": "feliz"},
-    "😄": {"term": "contente"},
-    "😢": {"term": "triste"},
-    "😠": {"term": "zangado"},
-    "😰": {"term": "preocupado"},
-    "😐": {"term": "sério"},
-    "🍎": {"term": "maçã"},
-    "🍌": {"term": "banana"},
-    "🍕": {"term": "pizza"},
-    "🐱": {"term": "gato"},
-    "🐶": {"term": "cachorro"},
-    "🐘": {"term": "elefante"},
-    "🌺": {"term": "flor"},
-    "🚂": {"term": "trem"},
-    "✈️": {"term": "avião"},
-    "👟": {"term": "tênis"},
-    "👗": {"term": "vestido"},
+    "🔢": {"term": "números", "id": 2879},
+    "➕": {"term": "somar", "id": 5868},
+    "🔤": {"term": "alfabeto", "id": 3050},
+    "⏰": {"term": "relógio", "id": 2549},
+    "💰": {"term": "dinheiro", "id": 4630},
+    "📦": {"term": "caixa", "id": 5935},
+    "📅": {"term": "agenda", "id": 5898},
+    "🎮": {"term": "brincar", "id": 23392},
+    "⏳": {"term": "esperar", "id": 36914},
+    "😊": {"term": "contente", "id": 35547},
+    "😄": {"term": "feliz", "id": 9907},
+    "😢": {"term": "triste", "id": 35545},
+    "😠": {"term": "zangado", "id": 35539},
+    "😰": {"term": "preocupado", "id": 26985},
+    "😐": {"term": "sério", "id": 8690},
+    "😌": {"term": "calmo"},
+    "😨": {"term": "medo"},
+    "🍎": {"term": "maçã", "id": 2462},
+    "🍌": {"term": "banana", "id": 2530},
+    "🍕": {"term": "pizza", "id": 2527},
+    "🐱": {"term": "gato", "id": 7114},
+    "🐶": {"term": "cão", "avoid": [7201]},
+    "🐘": {"term": "elefante", "id": 2372},
+    "🌺": {"term": "flor", "id": 7104},
+    "🚂": {"term": "comboio", "avoid": [39581]},
+    "✈️": {"term": "avião", "id": 2264},
+    "👟": {"term": "tênis", "id": 2621},
+    "👗": {"term": "vestido", "id": 2613},
 }
 
 
@@ -121,9 +127,9 @@ def fetch(url: str) -> bytes:
         return response.read()
 
 
-def find_id(term: str):
+def find_id(term: str, avoid=()):
     """Primeiro pictograma cuja palavra-chave é exatamente o termo; senão, o primeiro resultado."""
-    results = json.loads(fetch(API.format(term=urllib.parse.quote(term))))
+    results = [p for p in json.loads(fetch(API.format(term=urllib.parse.quote(term)))) if p["_id"] not in avoid]
     for picto in results:
         if any(k.get("keyword", "").lower() == term.lower() for k in picto.get("keywords", [])):
             return picto["_id"]
@@ -140,7 +146,7 @@ def main() -> int:
     for emoji, info in CATALOG.items():
         name = f"{slug(info['term'])}.png"
         try:
-            picto_id = info.get("id") or find_id(info["term"])
+            picto_id = info.get("id") or find_id(info["term"], info.get("avoid", ()))
             if not picto_id:
                 failures.append(f"{emoji} {info['term']}: nenhum resultado")
                 continue

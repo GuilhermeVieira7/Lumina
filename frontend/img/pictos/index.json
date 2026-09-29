@@ -26,11 +26,6 @@
    "id": 6627,
    "term": "vestir"
   },
-  "🥣": {
-   "file": "tomar-o-cafe-da-manha.png",
-   "id": 37263,
-   "term": "tomar o café da manhã"
-  },
   "🍽️": {
    "file": "almocar.png",
    "id": 28206,
@@ -55,11 +50,6 @@
    "file": "lapis.png",
    "id": 2440,
    "term": "lápis"
-  },
-  "⭐": {
-   "file": "estrela.png",
-   "id": 2752,
-   "term": "estrela"
   },
   "🧸": {
    "file": "brinquedo.png",
@@ -181,16 +171,6 @@
    "id": 5526,
    "term": "não"
   },
-  "🍪": {
-   "file": "biscoito.png",
-   "id": 8295,
-   "term": "biscoito"
-  },
-  "🫧": {
-   "file": "bolhas-de-sabao.png",
-   "id": 36525,
-   "term": "bolhas de sabão"
-  },
   "📱": {
    "file": "tablet.png",
    "id": 28099,
@@ -247,14 +227,14 @@
    "term": "esperar"
   },
   "😊": {
-   "file": "feliz.png",
-   "id": 9907,
-   "term": "feliz"
-  },
-  "😄": {
    "file": "contente.png",
    "id": 35547,
    "term": "contente"
+  },
+  "😄": {
+   "file": "feliz.png",
+   "id": 9907,
+   "term": "feliz"
   },
   "😢": {
    "file": "triste.png",
@@ -296,11 +276,6 @@
    "id": 7114,
    "term": "gato"
   },
-  "🐶": {
-   "file": "cachorro.png",
-   "id": 7201,
-   "term": "cachorro"
-  },
   "🐘": {
    "file": "elefante.png",
    "id": 2372,
@@ -310,11 +285,6 @@
    "file": "flor.png",
    "id": 7104,
    "term": "flor"
-  },
-  "🚂": {
-   "file": "trem.png",
-   "id": 39581,
-   "term": "trem"
   },
   "✈️": {
    "file": "aviao.png",

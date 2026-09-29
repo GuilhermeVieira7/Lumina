@@ -11,10 +11,11 @@ from datetime import datetime, timedelta
 
 from database import get_db
 from data.activity_bank import ACTIVITY_AREA, AREAS, activity_name
-from models import User, Profile, Session, Response as ResponseModel, Note, Goal, ChildRequest
+from models import User, Profile, Session, Response as ResponseModel, Note, Goal, ChildRequest, MoodCheck
 from schemas import SessionCreate, SessionResponse, SessionUpdate
 from routers.goals import refresh_goals
 from routers.requests import summarize
+from routers.moods import summarize as summarize_moods
 from auth import get_current_user
 from permissions import get_profile_for
 
@@ -276,6 +277,10 @@ def export_pdf(
     if since:
         request_query = request_query.filter(ChildRequest.created_at >= since)
     request_summary = summarize(request_query.all())
+    mood_query = db.query(MoodCheck).filter(MoodCheck.profile_id == profile_id)
+    if since:
+        mood_query = mood_query.filter(MoodCheck.created_at >= since)
+    mood_summary = summarize_moods(mood_query.all())
 
     SYSTEM_NAME = "Lumina TEA Edu"
     NEXT = dict(new_x=XPos.LMARGIN, new_y=YPos.NEXT)
@@ -358,6 +363,15 @@ def export_pdf(
         section("Pedidos feitos pela criança na prancha")
         metric_line("Total no período:", sum(r["count"] for r in request_summary))
         metric_line("Mais frequentes:", ", ".join(f"{r['label']} ({r['count']})" for r in request_summary[:6]))
+
+    if mood_summary:
+        section("Como a criança disse que estava se sentindo")
+        total_moods = sum(m["count"] for m in mood_summary)
+        metric_line("Registros no período:", total_moods)
+        for m in mood_summary:
+            metric_line(f"{m['label']}:", f"{m['count']} {'vez' if m['count'] == 1 else 'vezes'}")
+        hard = sum(m["count"] for m in mood_summary if m["hard"])
+        metric_line("Emoções difíceis:", f"{hard} de {total_moods} ({round(100 * hard / total_moods)}%)")
 
     if notes:
         section("Diário de observações (mais recentes)")
