@@ -300,6 +300,46 @@
    "file": "vestido.png",
    "id": 2613,
    "term": "vestido"
+  },
+  "🥣": {
+   "file": "pequeno-almoco.png",
+   "id": 4626,
+   "term": "pequeno-almoço"
+  },
+  "⭐": {
+   "file": "estrela.png",
+   "id": 4644,
+   "term": "estrela"
+  },
+  "🍪": {
+   "file": "bolacha.png",
+   "id": 8312,
+   "term": "bolacha"
+  },
+  "🫧": {
+   "file": "bolas-de-sabao.png",
+   "id": 6945,
+   "term": "bolas de sabão"
+  },
+  "😌": {
+   "file": "calmo.png",
+   "id": 31310,
+   "term": "calmo"
+  },
+  "😨": {
+   "file": "medo.png",
+   "id": 10261,
+   "term": "medo"
+  },
+  "🐶": {
+   "file": "cao.png",
+   "id": 7202,
+   "term": "cão"
+  },
+  "🚂": {
+   "file": "comboio.png",
+   "id": 2603,
+   "term": "comboio"
   }
  }
 }
