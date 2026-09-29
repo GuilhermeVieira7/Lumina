@@ -45,7 +45,7 @@ def _period_label(days: Optional[int]) -> str:
 def build_headline(name: str, days: Optional[int], data: dict) -> str:
     """Frase curta, em linguagem simples, para o topo do painel e o WhatsApp."""
     if not data["activities"]:
-        return f"{_period_label(days)}, {name} ainda não fez atividades. Que tal começar por uma atividade destacada com ⭐?"
+        return f"{_period_label(days)}, {name} ainda não fez atividades. Que tal começar por uma das atividades destacadas com estrela?"
     parts = [f"{_period_label(days)}, {name} fez {_plural(data['activities'], 'atividade', 'atividades')}"]
     if data["accuracy"] is not None:
         text = f"e acertou {round(data['accuracy'])}% de primeira"

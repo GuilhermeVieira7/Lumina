@@ -309,7 +309,7 @@ const Admin = {
         try {
             UI.toast('Gerando relatório…');
             const q = this.days ? `&days=${this.days}` : '';
-            const res = await fetch(`/api/sessions/export/pdf?profile_id=${this.pid}${q}`, {
+            const res = await fetch(`/api/sessions/export/pdf?profile_id=${this.pid}${q}&tz=${new Date().getTimezoneOffset()}`, {
                 headers: { Authorization: `Bearer ${API.token}` },
             });
             if (!res.ok) throw new Error('Não foi possível gerar o PDF');
