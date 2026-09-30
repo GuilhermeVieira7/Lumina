@@ -47,7 +47,7 @@ ACTIVITY_BANK = {
                 {"question": "Qual é o HEXÁGONO?",         "type": "shape", "correct": "⬡", "options": ["■", "⬡", "●"]},
             ],
             3: [
-                {"question": "Quantos LADOS tem um triângulo?", "type": "number", "correct": "3", "options": ["2", "3", "4"]},
+                {"question": "Quantos LADOS tem um triângulo?", "type": "number", "correct": "3", "options": ["2", "3", "4"], "visual": "▲"},
                 {"question": "Qual forma rola?",                "type": "shape",  "correct": "●", "options": ["●", "■", "▲"]},
                 {"question": "Qual tem 4 lados IGUAIS?",        "type": "shape",  "correct": "■", "options": ["▭", "■", "▲"]},
             ],

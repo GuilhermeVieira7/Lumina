@@ -319,6 +319,11 @@ button { cursor: pointer; }
 .option-btn.correct { border-color: var(--success); background: var(--success-soft); }
 .option-btn.try-again { border-color: var(--warning); background: var(--warning-soft); }
 .option-btn:disabled { cursor: default; }
+/* Formas coloridas com rostinho */
+.option-btn .shape-art { width: 130px; height: 130px; display: block; }
+.option-btn.correct .shape-art { animation: shape-happy .6s ease; }
+@keyframes shape-happy { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.15) rotate(-6deg); } 70% { transform: scale(1.05) rotate(4deg); } }
+@media (max-width: 600px) { .option-btn .shape-art { width: 96px; height: 96px; } }
 
 .mascot-row { display: flex; align-items: flex-end; gap: 12px; margin-top: 18px; min-height: 120px; }
 .mascot-row img { width: 110px; height: 110px; object-fit: contain; }
