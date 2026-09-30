@@ -24,6 +24,16 @@ const Activity = {
 
     // Atividades cujas respostas são figuras e podem virar pictogramas
     PICTO_ACTIVITIES: ['emotions', 'categories'],
+
+    // Formas desenhadas grandes, coloridas e com rostinho (em vez de ■ ▲ ●)
+    SHAPES: {
+        '●': { name: 'círculo', color: '#F2B632', body: '<circle cx="60" cy="60" r="50"/>', face: [60, 58] },
+        '■': { name: 'quadrado', color: '#4C8DF6', body: '<rect x="12" y="12" width="96" height="96" rx="10"/>', face: [60, 58] },
+        '▲': { name: 'triângulo', color: '#E5604D', body: '<path d="M60 8 L112 106 H8 Z" stroke-linejoin="round"/>', face: [60, 74] },
+        '★': { name: 'estrela', color: '#FF9F1C', body: '<path d="M60 6 L75 42 L114 45 L84 70 L94 108 L60 87 L26 108 L36 70 L6 45 L45 42 Z" stroke-linejoin="round"/>', face: [60, 62] },
+        '⬡': { name: 'hexágono', color: '#4CB68D', body: '<path d="M34 12 H86 L112 60 L86 108 H34 L8 60 Z" stroke-linejoin="round"/>', face: [60, 58] },
+        '▭': { name: 'retângulo', color: '#9B7FD1', body: '<rect x="4" y="28" width="112" height="64" rx="8"/>', face: [60, 58] },
+    },
     PRAISE: ['Muito bem!', 'Isso mesmo!', 'Você conseguiu!', 'Boa!', 'Perfeito!'],
     RETRY: ['Tente de novo', 'Quase! Mais uma vez', 'Vamos tentar outra?'],
 
@@ -185,6 +195,8 @@ const Activity = {
         if (isClock) {
             text = 'Que horas são?';
             visual = this._clockSvg(q.correct);
+        } else if (this.SHAPES[visual]) {
+            visual = this._shapeSvg(visual);
         } else {
             visual = UI.esc(visual);
         }
@@ -213,6 +225,10 @@ const Activity = {
                 btn.innerHTML = this._optionHtml(q, opt);
             }
             if (q.type === 'color') btn.setAttribute('aria-label', UI.COLOR_NAMES[opt] || 'cor');
+            if (q.type === 'shape' && this.SHAPES[opt]) {
+                btn.classList.add('shape-option');
+                btn.setAttribute('aria-label', this.SHAPES[opt].name);
+            }
             btn.dataset.value = opt;
             btn.addEventListener('click', () => this._answer(btn, opt, q));
             options.appendChild(btn);
@@ -223,7 +239,23 @@ const Activity = {
         if (q.type === 'color') {
             return `<span class="swatch" style="background:${UI.esc(value)}${reference ? ';display:inline-block' : ''}" aria-hidden="true"></span>`;
         }
+        if (q.type === 'shape' && this.SHAPES[value]) return this._shapeSvg(value);
         return UI.esc(value);
+    },
+
+    _shapeSvg(glyph) {
+        const s = this.SHAPES[glyph];
+        const [x, y] = s.face;
+        return `<svg class="shape-art" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+            <g fill="${s.color}" stroke="#1F2A44" stroke-width="4">${s.body}</g>
+            <g class="shape-face">
+                <circle cx="${x - 13}" cy="${y - 6}" r="6" fill="#1F2A44"/>
+                <circle cx="${x + 13}" cy="${y - 6}" r="6" fill="#1F2A44"/>
+                <circle cx="${x - 11}" cy="${y - 8}" r="2" fill="#fff"/>
+                <circle cx="${x + 15}" cy="${y - 8}" r="2" fill="#fff"/>
+                <path d="M${x - 11} ${y + 7} Q${x} ${y + 17} ${x + 11} ${y + 7}" fill="none" stroke="#1F2A44" stroke-width="4" stroke-linecap="round"/>
+            </g>
+        </svg>`;
     },
 
     _answer(btn, selected, q) {
