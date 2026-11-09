@@ -83,3 +83,13 @@ def test_old_bcrypt_accounts_move_to_argon2_on_login(client):
         db.close()
     assert client.post("/api/auth/login", json={"username": username, "password": password}).status_code == 200
     assert client.post("/api/auth/login", json={"username": username, "password": WRONG}).status_code == 401
+
+
+def test_frontend_route_does_not_leak_server_files(client):
+    # "../" (codificado) não pode sair da pasta frontend e entregar o código do servidor
+    resp = client.get("/..%2fbackend%2fauth.py")
+    assert "SECRET_KEY" not in resp.text
+
+
+def test_health_check(client):
+    assert client.get("/api/health").json() == {"status": "ok"}
