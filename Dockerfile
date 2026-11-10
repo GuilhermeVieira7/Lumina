@@ -21,5 +21,7 @@ COPY . /app
 # Expor a porta 80 do container
 EXPOSE 80
 
-# Usar Uvicorn rodando a main.py do backend na porta 80
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "80"]
+# Usar Uvicorn rodando a main.py do backend.
+# Porta: 80 no docker compose; na nuvem (ex.: Render) a hospedagem informa em $PORT.
+# --proxy-headers: atrás do HTTPS da hospedagem, o app enxerga o endereço real (https).
+CMD ["sh", "-c", "exec uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-80} --proxy-headers --forwarded-allow-ips='*'"]

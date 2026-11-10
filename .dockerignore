@@ -1,0 +1,12 @@
+# Nunca colocar segredos, bancos locais ou o histórico do git dentro da imagem
+.env
+*.db
+.git
+.vscode
+venv/
+.venv/
+__pycache__/
+*.pyc
+tests/
+htmlcov/
+.coverage

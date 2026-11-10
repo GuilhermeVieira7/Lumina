@@ -83,6 +83,12 @@ async def security_headers(request, call_next):
     response.headers.setdefault("Referrer-Policy", "no-referrer")
     return response
 
+# ---- Verificação de saúde (usada pela hospedagem para saber se o app subiu) ----
+@app.get("/api/health", include_in_schema=False)
+def health():
+    return {"status": "ok"}
+
+
 # ---- Registrar Routers ----
 app.include_router(auth.router)
 app.include_router(profiles.router)
@@ -119,6 +125,8 @@ if os.path.exists(frontend_dir):
             media_type="application/javascript",
         )
 
+    _frontend_root = os.path.realpath(frontend_dir) + os.sep
+
     # Todas as rotas nao-API servem o index.html (SPA)
     @app.get("/")
     async def root():
@@ -128,8 +136,10 @@ if os.path.exists(frontend_dir):
     async def catch_all(full_path: str):
         # Se nao for rota de API, servir index.html
         if not full_path.startswith("api/"):
-            file_path = os.path.join(frontend_dir, full_path)
-            if os.path.isfile(file_path):
+            # realpath + checagem: impede "../" de sair da pasta frontend
+            # (senão daria para baixar o código ou o .env do servidor).
+            file_path = os.path.realpath(os.path.join(frontend_dir, full_path))
+            if file_path.startswith(_frontend_root) and os.path.isfile(file_path):
                 return FileResponse(file_path)
             return FileResponse(os.path.join(frontend_dir, "index.html"))
 
