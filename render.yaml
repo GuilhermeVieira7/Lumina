@@ -11,7 +11,7 @@ services:
     region: virginia
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health
-    autoDeploy: true
+    autoDeployTrigger: commit
     envVars:
       # Endereço do banco (rede interna do Render, não fica exposto)
       - key: DATABASE_URL
@@ -28,6 +28,5 @@ databases:
     region: virginia
     databaseName: lumina
     user: lumina
-    postgresMajorVersion: "15"
     # Nenhum acesso de fora: só o app do Lumina conversa com o banco
     ipAllowList: []
