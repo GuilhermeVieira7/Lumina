@@ -325,6 +325,69 @@ button { cursor: pointer; }
 @keyframes shape-happy { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.15) rotate(-6deg); } 70% { transform: scale(1.05) rotate(4deg); } }
 @media (max-width: 600px) { .option-btn .shape-art { width: 96px; height: 96px; } }
 
+/* Categorias: caixas coloridas com exemplos; a figura entra na caixa certa */
+.cat-item { display: inline-flex; font-size: 6rem; line-height: 1; transition: transform .5s ease, opacity .5s ease; }
+.cat-item .picto { width: 150px; height: 150px; border-radius: 18px; }
+.cat-item.gone { transform: translateY(60px) scale(.3); opacity: 0; }
+.option-btn.cat-option { padding: 10px; }
+.cat-box {
+    display: flex; flex-direction: column; width: 100%; max-width: 230px; border-radius: 18px; overflow: hidden;
+    border: 3px solid var(--c); background: color-mix(in srgb, var(--c) 14%, var(--card));
+}
+.question-reference .cat-box { margin: 0 auto; font-size: 1rem; }
+.cat-items { display: flex; justify-content: center; align-items: center; gap: 6px; padding: 12px 8px; }
+.cat-thumb {
+    width: 58px; height: 58px; border-radius: 12px; background: #fff; font-size: 2.3rem; line-height: 1;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.cat-thumb .picto { width: 100%; height: 100%; }
+.cat-slot { background: transparent; border: 3px dashed var(--c); }
+.cat-label { background: var(--c); color: #fff; font-size: 1.4rem; font-weight: 800; padding: 6px 4px; }
+.cat-new { display: inline-flex; animation: cat-drop .6s ease; }
+.option-btn.correct .cat-box { animation: shape-happy .6s ease; }
+@keyframes cat-drop { from { transform: translateY(-40px) scale(1.4); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Números: cor por número + quantidade em bolinhas; figuras para contar tocando */
+.num-card { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.num-digit { font-size: 4rem; line-height: 1; color: var(--c); }
+.num-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; max-width: 110px; }
+.num-dots i { width: 14px; height: 14px; border-radius: 50%; background: var(--c); }
+.option-btn.correct .num-card { animation: shape-happy .6s ease; }
+.num-track { display: flex; justify-content: center; gap: 10px; letter-spacing: 0; }
+.num-tile {
+    width: 76px; height: 76px; border-radius: 16px; border: 3px solid var(--c); color: var(--c);
+    background: color-mix(in srgb, var(--c) 14%, var(--card)); font-size: 2.6rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+}
+.num-tile.missing { --c: var(--primary); border-style: dashed; background: transparent; }
+.count-group { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; letter-spacing: 0; }
+.count-item, .count-slot { position: relative; width: 88px; height: 88px; border-radius: 50%; }
+.count-item {
+    border: 3px solid var(--border); background: var(--card); font-size: 3rem; line-height: 1;
+    display: flex; align-items: center; justify-content: center; transition: transform .12s ease;
+}
+.count-item .picto { width: 64px; height: 64px; border-radius: 50%; }
+.count-item.counted { border-color: var(--success); background: var(--success-soft); transform: scale(1.06); }
+.count-item.counted::after {
+    content: attr(data-n); position: absolute; top: -8px; right: -8px; width: 32px; height: 32px; border-radius: 50%;
+    background: var(--primary); color: #fff; font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; justify-content: center;
+}
+.count-slot { border: 3px dashed var(--border); }
+.count-hint { font-size: 1rem; font-weight: 700; color: var(--text-soft); margin-top: 8px; letter-spacing: 0; }
+@media (max-width: 600px) {
+    .options.cat-options { grid-template-columns: 1fr; }
+    .option-btn.cat-option { min-height: 0; padding: 8px; }
+    .cat-thumb { width: 50px; height: 50px; font-size: 2rem; }
+    .cat-label { font-size: 1.05rem; }
+    .cat-item .picto { width: 120px; height: 120px; }
+    .num-digit { font-size: 3rem; }
+    .num-dots i { width: 10px; height: 10px; }
+    .num-tile { width: 56px; height: 56px; font-size: 2rem; }
+    .count-item, .count-slot { width: 64px; height: 64px; }
+    .count-item { font-size: 2.2rem; }
+    .count-item .picto { width: 46px; height: 46px; }
+}
+
 .mascot-row { display: flex; align-items: flex-end; gap: 12px; margin-top: 18px; min-height: 120px; }
 .mascot-row img { width: 110px; height: 110px; object-fit: contain; }
 .bubble {

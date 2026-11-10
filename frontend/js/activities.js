@@ -34,6 +34,16 @@ const Activity = {
         '⬡': { name: 'hexágono', color: '#4CB68D', body: '<path d="M34 12 H86 L112 60 L86 108 H34 L8 60 Z" stroke-linejoin="round"/>', face: [60, 58] },
         '▭': { name: 'retângulo', color: '#9B7FD1', body: '<rect x="4" y="28" width="112" height="64" rx="8"/>', face: [60, 58] },
     },
+    // Categorias: cada grupo é uma caixa colorida com exemplos dentro
+    CATEGORY_BOXES: {
+        'Frutas':   { color: '#D1453B', items: ['🍎', '🍌', '🍇', '🍓'] },
+        'Animais':  { color: '#2F9E6E', items: ['🐶', '🐱', '🐘', '🐰'] },
+        'Veículos': { color: '#2F6FE0', items: ['🚗', '✈️', '🚂', '🚲'] },
+        'Roupas':   { color: '#7B5CC4', items: ['👗', '👟', '🧦', '🧢'] },
+    },
+    // Números: cada número tem sua cor e mostra a quantidade em bolinhas
+    NUMBER_COLORS: ['#6B7280', '#D1453B', '#D9730D', '#B7860B', '#2F9E6E', '#2F6FE0', '#7B5CC4', '#C2477F', '#1E8A99', '#6A7F2A', '#A0522D'],
+    NUMBER_WORDS: ['zero', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez'],
     PRAISE: ['Muito bem!', 'Isso mesmo!', 'Você conseguiu!', 'Boa!', 'Perfeito!'],
     RETRY: ['Tente de novo', 'Quase! Mais uma vez', 'Vamos tentar outra?'],
 
@@ -188,6 +198,7 @@ const Activity = {
         this._setMascot('idle', '');
 
         const q = this.questions[this.index];
+        const type = this.plan.activity_type;
         let text = q.question;
         let visual = q.visual || q.sequence || '';
         // Relógio: mostrar o relógio desenhado em vez de escrever a resposta na pergunta
@@ -197,6 +208,12 @@ const Activity = {
             visual = this._clockSvg(q.correct);
         } else if (this.SHAPES[visual]) {
             visual = this._shapeSvg(visual);
+        } else if (type === 'categories' && visual) {
+            visual = `<div class="cat-item">${Pictos.html(visual, { alt: true })}</div>`;
+        } else if (type === 'numbers' && /^[\d? ]+$/.test(visual)) {
+            visual = this._numberTrack(visual);
+        } else if (type === 'numbers' && visual) {
+            visual = this._countGroup(visual);
         } else {
             visual = UI.esc(visual);
         }
@@ -207,17 +224,26 @@ const Activity = {
                 <button class="speak-btn" id="speak-btn" aria-label="Ouvir a pergunta">🔊</button>
             </div>
             ${visual ? `<div class="question-visual">${visual}</div>` : ''}
+            ${q.category && this.CATEGORY_BOXES[q.category] ? `<div class="question-reference">${this._categoryBox(q.category, q.options)}</div>` : ''}
             ${q.reference && !q.visual ? `<div class="question-reference">${this._optionHtml(q, q.reference, true)}</div>` : ''}`;
         document.getElementById('speak-btn').addEventListener('click', () => SoundController.speak(text));
+        this._bindCounting();
 
         // Pictogramas só quando todas as opções têm um, para não misturar estilos
         const usePictos = this.PICTO_ACTIVITIES.includes(this.plan.activity_type) && q.options.every(o => Pictos.has(o));
         const options = document.getElementById('activity-options');
         options.innerHTML = '';
+        options.classList.toggle('cat-options', q.options.every(o => this.CATEGORY_BOXES[o]));
         this._shuffle([...q.options]).forEach(opt => {
             const btn = document.createElement('button');
             btn.className = 'option-btn';
-            if (usePictos) {
+            if (this.CATEGORY_BOXES[opt]) {
+                btn.classList.add('cat-option');
+                btn.innerHTML = this._categoryBox(opt, [q.visual], !!q.visual);
+            } else if (type === 'numbers' && q.type === 'number' && /^\d+$/.test(opt)) {
+                btn.classList.add('num-option');
+                btn.innerHTML = this._numberCard(opt);
+            } else if (usePictos) {
                 btn.classList.add('picto-option');
                 btn.innerHTML = Pictos.html(opt, { alt: true });
             } else {
@@ -258,6 +284,60 @@ const Activity = {
         </svg>`;
     },
 
+    _numberColor(n) {
+        return this.NUMBER_COLORS[Number(n) % this.NUMBER_COLORS.length];
+    },
+
+    /** Número grande colorido com a quantidade em bolinhas embaixo. */
+    _numberCard(n) {
+        const count = Number(n);
+        const dots = count <= 10 ? '<i></i>'.repeat(count) : '';
+        return `<span class="num-card" style="--c:${this._numberColor(n)}">
+            <span class="num-digit">${UI.esc(n)}</span>
+            ${dots ? `<span class="num-dots" aria-hidden="true">${dots}</span>` : ''}
+        </span>`;
+    },
+
+    /** Trilha de números (ex.: "1 2 3 ?") com a casa que falta tracejada. */
+    _numberTrack(visual) {
+        return `<div class="num-track">${visual.split(' ').filter(Boolean).map(t => t === '?'
+            ? '<span class="num-tile missing">?</span>'
+            : `<span class="num-tile" style="--c:${this._numberColor(t)}">${UI.esc(t)}</span>`).join('')}</div>`;
+    },
+
+    /** Figuras para contar tocando (cada toque marca e fala o número); ○ é uma casa vazia. */
+    _countGroup(visual) {
+        const items = Array.from(visual).filter(c => c.trim() && c !== '\uFE0F');
+        return `<div class="count-group">${items.map(e => e === '○'
+            ? '<span class="count-slot" aria-hidden="true"></span>'
+            : `<button type="button" class="count-item" aria-label="Contar">${Pictos.html(e)}</button>`).join('')}</div>
+            <div class="count-hint">Toque em cada um para contar</div>`;
+    },
+
+    _bindCounting() {
+        let n = 0;
+        document.querySelectorAll('#activity-question .count-item').forEach(item => {
+            item.addEventListener('click', () => {
+                if (item.classList.contains('counted')) return;
+                n++;
+                item.classList.add('counted');
+                item.dataset.n = n;
+                SoundController.speak(this.NUMBER_WORDS[n] || String(n));
+            });
+        });
+    },
+
+    /** Caixa da categoria com exemplos (sem a figura perguntada); slot=true deixa uma casa vazia para ela. */
+    _categoryBox(name, exclude = [], slot = false) {
+        const box = this.CATEGORY_BOXES[name];
+        const items = box.items.filter(e => !exclude.includes(e)).slice(0, slot ? 2 : 3);
+        const thumbs = items.map(e => `<span class="cat-thumb">${Pictos.html(e)}</span>`).join('');
+        return `<span class="cat-box" style="--c:${box.color}">
+            <span class="cat-items" aria-hidden="true">${thumbs}${slot ? '<span class="cat-thumb cat-slot"></span>' : ''}</span>
+            <span class="cat-label">${UI.esc(name)}</span>
+        </span>`;
+    },
+
     _answer(btn, selected, q) {
         if (this.locked) return;
         const isCorrect = selected === q.correct;
@@ -271,6 +351,12 @@ const Activity = {
             });
             if (this.attempts === 1) this.correct++;
             btn.classList.add('correct');
+            // Categorias: a figura "entra" na caixa certa
+            if (btn.classList.contains('cat-option') && q.visual) {
+                const slot = btn.querySelector('.cat-slot');
+                if (slot) { slot.classList.replace('cat-slot', 'cat-new'); slot.innerHTML = Pictos.html(q.visual); }
+                document.querySelector('#activity-question .cat-item')?.classList.add('gone');
+            }
             document.querySelectorAll('.option-btn').forEach(b => { b.disabled = true; });
             const msg = this.reward
                 ? `Ganhou uma ⭐!`
