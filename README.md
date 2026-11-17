@@ -45,6 +45,10 @@ Acesse **http://localhost** (porta 80). O app espera o banco ficar pronto antes 
 
 **pgAdmin (ver e editar as tabelas):** abra **http://localhost:5050** e entre com `PGADMIN_EMAIL` e `PGADMIN_PASSWORD` do `.env`. O servidor **Lumina** já aparece cadastrado; ao abrir, digite a `POSTGRES_PASSWORD`. As tabelas ficam em Lumina → Databases → lumina → Schemas → public → Tables (botão direito → View/Edit Data). O banco e o pgAdmin só aceitam conexões deste computador.
 
+**Pergunte à IA (Google Gemini, opcional):** coloque `GEMINI_API_KEY` no `.env` (crie em https://aistudio.google.com/apikey) e rode `docker compose up -d` de novo. O modelo padrão é `gemini-3.5-flash`; se ele estiver sobrecarregado, o app tenta o `gemini-3.1-flash-lite`. Sem a chave, o painel responde pelas regras do Lumina. O Gemini recebe só dados agregados: nunca o nome, a foto ou o diário da criança.
+
+**Dados de demonstração (fictícios):** `docker exec tea_application python scripts/dados_demo.py` preenche o "Aluno Demo" com 30 dias de sessões, ajuda registrada, emoções, metas e observações, para ver os gráficos e as análises do painel.
+
 Como a segurança do sistema funciona: [docs/SEGURANCA.md](docs/SEGURANCA.md).
 
 ---
@@ -59,8 +63,8 @@ Como a segurança do sistema funciona: [docs/SEGURANCA.md](docs/SEGURANCA.md).
 6. **Como estou me sentindo?** — ao entrar na sua área, a criança toca no rosto que mostra como está (feliz, calmo, triste, bravo, com medo, cansado). O Lumina fala a frase e, nas emoções difíceis, oferece "Pedir ajuda". Os adultos veem as emoções por dia no gráfico do Progresso, no Diário e no relatório PDF. Pode ser desligado em Painel → Ajustes.
 7. **Várias crianças por família** — cada criança pode ter foto (tirada no celular ou escolhida da galeria, reduzida no navegador e guardada só na conta do responsável). Na tela "Quem vai usar agora?" e no topo do Painel dos Adultos, um toque na foto troca a criança.
 8. **Acessibilidade (WCAG 2.1 AA)** — contraste mínimo de 4,5:1 em todos os temas, alvos de toque de pelo menos 44 px, títulos em ordem, região principal, janelas que prendem o foco do teclado e devolvem o foco ao fechar. Revisado com axe-core em 25 telas e 5 temas, sem violações.
-9. **Recomendação explicável** — `backend/ai_engine.py`: regras de domínio e de dificuldade (ABA) e pontuação por interesses, metas, desempenho e variedade. Cada sugestão mostra os motivos e só vale depois que um adulto aceita, ajusta ou descarta.
-10. **Painel dos Adultos protegido por senha** — progresso por área e período, sessões com nível de ajuda, diário de observações, metas, plano de atividades, rotina, perfil e ajustes sensoriais.
+9. **Recomendação explicável** — `backend/ai_engine.py`: regras de domínio e de dificuldade (ABA) e pontuação por interesses, metas, desempenho e variedade. O domínio só conta quando a criança acerta **sem gesto ou ajuda física**; acertar com ajuda gera a sugestão de retirar a ajuda aos poucos. A IA também cruza o "Como estou?" com o desempenho (alerta quando o acerto cai nos dias difíceis). Cada sugestão mostra os motivos e só vale depois que um adulto aceita, ajusta ou descarta.
+10. **Painel dos Adultos protegido por senha** — aba **Hoje** (plano do dia montado pelas regras, alertas, metas e "Pergunte à IA"), progresso por área e período, independência (% feita sem ajuda) e gráfico da ajuda por dia, sessões com nível de ajuda, diário de observações, metas com previsão de quando serão atingidas, plano de atividades, rotina, perfil e ajustes sensoriais.
 11. **Acompanhamento compartilhado** — o responsável convida um profissional, que aceita o convite; o acesso pode ser revogado a qualquer momento.
 12. **LGPD** — consentimento no cadastro, perfil sem diagnóstico, exclusão da criança ou da conta com todos os dados.
 13. **Relatório em PDF** — Painel → Progresso → "Relatório PDF".

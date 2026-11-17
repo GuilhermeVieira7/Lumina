@@ -3,6 +3,10 @@ __pycache__/
 *.pyo
 *.db
 .env
+# Qualquer cópia do .env (ex.: .env.txt, .env.local, .env.bak) também tem senhas
+.env.*
+*.env
+!.env.example
 venv/
 .venv/
 *.egg-info/

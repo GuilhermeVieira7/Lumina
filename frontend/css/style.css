@@ -488,7 +488,7 @@ button { cursor: pointer; }
 /* Resumo do período: uma frase e três números */
 .summary-card { margin-bottom: 20px; }
 .summary-card .headline { font-size: 1.15rem; font-weight: 700; line-height: 1.5; margin-bottom: 16px; }
-.big-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.big-nums { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .big-num {
     display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px;
     background: var(--bg); border-radius: var(--radius-sm); padding: 14px 8px;
@@ -548,6 +548,7 @@ button { cursor: pointer; }
 .rec-card.attention { border-left-color: var(--warning); }
 .rec-card.positive { border-left-color: var(--success); }
 .rec-card.pattern { border-left-color: var(--area-socializacao); }
+.rec-card.help { border-left-color: var(--area-autonomia, var(--success)); }
 .rec-card h2 { display: flex; align-items: center; gap: 10px; }
 .rec-card ul { margin: 8px 0 12px 20px; color: var(--text-soft); }
 .rec-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
@@ -721,7 +722,7 @@ body.low-stimulus .mood-card, body.low-stimulus .mood-said .pic { border-color: 
     .tab .pill { position: absolute; top: -6px; right: -2px; margin: 0; }
     .subtabs { flex-wrap: nowrap; overflow-x: auto; margin-top: -4px; padding-bottom: 4px; }
     .subtabs button { flex-shrink: 0; }
-    .big-nums { gap: 8px; }
+    .big-nums { gap: 8px; grid-template-columns: repeat(2, 1fr); }
     .big-num { padding: 10px 4px; }
     .big-num b { font-size: 1.45rem; }
     .big-num .pic { font-size: 1.4rem; }
@@ -775,3 +776,33 @@ body.low-stimulus .tile.area-socializacao, body.low-stimulus .tile.area-autonomi
 
 /* Dica visual depois de 2 tentativas (ensino sem erro) */
 .option-btn.hint { border: 4px dashed var(--primary); background: var(--primary-soft); }
+
+/* ---------- Painel: aba Hoje e "Pergunte à IA" ---------- */
+.today-status { display: flex; gap: 14px; align-items: center; margin-bottom: 16px; font-size: 1.05rem; line-height: 1.5; }
+.today-status > .pic { font-size: 2.4rem; line-height: 1; }
+.today-status .meta { color: var(--text-soft); font-size: .9rem; font-weight: 700; margin-top: 2px; }
+.today-plan { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.today-act { background: var(--bg); border-radius: var(--radius-sm); padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.today-act-head { display: flex; gap: 10px; align-items: center; }
+.today-act-head .pic { font-size: 2rem; line-height: 1; }
+.today-act-head .meta { color: var(--text-soft); font-size: .88rem; }
+.today-act ul { margin: 0 0 0 18px; color: var(--text-soft); font-size: .92rem; }
+.today-tip { background: var(--primary-soft); color: var(--text); border-radius: var(--radius-sm); padding: 8px 10px; font-size: .92rem; font-weight: 600; }
+.today-act .btn { margin-top: auto; align-self: flex-start; }
+.today-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.ai-ask { border-left: 8px solid var(--primary); }
+.ai-log { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.ai-log:empty { display: none; }
+.ai-msg { border-radius: var(--radius-sm); padding: 10px 14px; line-height: 1.55; max-width: 92%; }
+.ai-msg.user { align-self: flex-end; background: var(--primary); color: #fff; white-space: pre-wrap; }
+.ai-msg.bot { align-self: flex-start; background: var(--bg); }
+.ai-msg.bot p + p, .ai-msg.bot p + ul, .ai-msg.bot p + ol, .ai-msg.bot ul + p, .ai-msg.bot ol + p { margin-top: 8px; }
+.ai-msg.bot ul, .ai-msg.bot ol { margin-left: 20px; }
+.ai-msg.bot .meta { margin-top: 8px; font-size: .8rem; color: var(--text-soft); font-weight: 700; }
+.ai-msg.thinking { color: var(--text-soft); font-style: italic; }
+.ai-examples { margin-bottom: 12px; }
+.ai-examples .chip { cursor: pointer; font-size: .88rem; }
+@media (max-width: 640px) {
+    .today-status { font-size: .98rem; }
+    .ai-msg { max-width: 100%; }
+}

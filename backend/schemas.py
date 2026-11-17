@@ -211,6 +211,8 @@ class GoalResponse(BaseModel):
     completed: bool
     created_at: datetime
     completed_at: Optional[datetime]
+    status: Optional[str] = None     # done, on_track, slow, stalled, waiting
+    forecast: Optional[str] = None   # frase com a previsão
 
     class Config:
         from_attributes = True
@@ -241,6 +243,14 @@ class Recommendation(BaseModel):
     message: str
     reasons: List[str] = []
     priority: str  # high, medium, low
+
+class AskTurn(BaseModel):
+    role: str = Field(..., pattern="^(user|assistant)$")
+    text: str = Field(..., max_length=4000)
+
+class AskIn(BaseModel):
+    question: str = Field(..., min_length=1, max_length=1000)
+    history: List[AskTurn] = Field(default_factory=list, max_length=8)
 
 class RecommendationDecisionIn(BaseModel):
     key: str
