@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session as DBSession
 
 from auth import get_current_user
 from data.activity_bank import activity_name
+from ai_engine import HELP_LABELS, independence_of
 from data.communication import MOODS_BY_KEY
 from database import get_db
 from models import ChildRequest, MoodCheck, Session, User
@@ -69,6 +70,8 @@ def build_headline(name: str, days: Optional[int], data: dict) -> str:
         sentences.append(f"Foi bem em {data['best']['name']}.")
     elif data["support"]:
         sentences.append(f"{data['support']['name']} precisa de mais apoio.")
+    if data["independence"] is not None:
+        sentences.append(f"Fez sem ajuda {round(data['independence'])}% das sessões em que a ajuda foi registrada.")
     if data["hard_days"]:
         sentences.append(f"Teve {_plural(data['hard_days'], 'dia difícil', 'dias difíceis')} segundo o \"Como estou?\".")
     return " ".join(sentences)
@@ -99,6 +102,13 @@ def get_summary(
     accuracy = _accuracy(sessions)
     previous_accuracy = _accuracy(previous)
     change = round(accuracy - previous_accuracy, 1) if accuracy is not None and previous_accuracy is not None else None
+
+    # Independência (RF08): quanto a criança fez sem ajuda do adulto
+    independence = independence_of(sessions)
+    previous_independence = independence_of(previous)
+    independence_change = (round(independence - previous_independence, 1)
+                           if independence is not None and previous_independence is not None else None)
+    help_counts = Counter(s.help_level for s in sessions if s.help_level in HELP_LABELS)
 
     # Melhor atividade e a que precisa de apoio (com pelo menos 2 sessões no período)
     by_activity = defaultdict(list)
@@ -132,7 +142,10 @@ def get_summary(
     for i in range(span):
         day = first_day + timedelta(days=i)
         rows = per_day.get(day, [])
-        daily.append({"date": day.isoformat(), "sessions": len(rows), "accuracy": _accuracy(rows)})
+        daily.append({
+            "date": day.isoformat(), "sessions": len(rows), "accuracy": _accuracy(rows),
+            "help": dict(Counter(s.help_level for s in rows if s.help_level in HELP_LABELS)),
+        })
 
     data = {
         "days": period,
@@ -143,6 +156,10 @@ def get_summary(
         "minutes": round(sum(s.total_time or 0 for s in sessions) / 60000),
         "stars": sum(s.stars or 0 for s in sessions),
         "active_days": len(per_day),
+        "independence": independence,
+        "independence_change": independence_change,
+        "help_counts": {k: help_counts.get(k, 0) for k in HELP_LABELS},
+        "help_unregistered": sum(1 for s in sessions if not s.help_level),
         "best": best,
         "support": support,
         "moods": len(moods),

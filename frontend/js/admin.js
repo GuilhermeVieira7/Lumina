@@ -3,7 +3,9 @@
 // ==========================================
 
 const Admin = {
-    tab: 'dashboard',
+    tab: 'today',
+    chat: [],        // conversa do "Pergunte à IA" (some ao trocar de criança)
+    chatPid: null,
     days: 30,
     charts: {},
     routineEmoji: '⭐',
@@ -50,6 +52,19 @@ const Admin = {
         }));
         document.getElementById('export-pdf').addEventListener('click', () => this.exportPdf());
         document.getElementById('share-whatsapp').addEventListener('click', () => this.shareWhatsApp());
+        document.getElementById('ai-ask-form').addEventListener('submit', e => { e.preventDefault(); this.ask(); });
+        document.getElementById('ai-ask-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.ask(); }
+        });
+        document.getElementById('ai-ask-clear').addEventListener('click', () => { this.chat = []; this._renderChat(); });
+        document.getElementById('ai-ask-examples').innerHTML = this.ASK_EXAMPLES
+            .map((q, i) => `<button type="button" class="chip" data-example="${i}">${UI.esc(q)}</button>`).join('');
+        document.getElementById('ai-ask-examples').addEventListener('click', e => {
+            const b = e.target.closest('[data-example]');
+            if (!b) return;
+            document.getElementById('ai-ask-input').value = this.ASK_EXAMPLES[Number(b.dataset.example)];
+            this.ask();
+        });
         document.getElementById('diary-form').addEventListener('submit', e => this.addNote(e));
         document.getElementById('goal-form').addEventListener('submit', e => this.addGoal(e));
         document.getElementById('mastery-form').addEventListener('submit', e => this.saveMastery(e));
@@ -109,7 +124,7 @@ const Admin = {
     },
 
     GROUPS: {
-        dashboard: 'progress', recs: 'progress',
+        today: 'progress', dashboard: 'progress', recs: 'progress',
         sessions: 'diary', diary: 'diary',
         plan: 'plan', routine: 'plan', goals: 'plan',
         profile: 'config', settings: 'config',
@@ -142,6 +157,7 @@ const Admin = {
         document.querySelector('.subtabs').classList.toggle('hidden', subs.filter(b => !b.hidden).length < 2);
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${tab}`));
         const loaders = {
+            today: () => this.loadToday(),
             dashboard: () => this.loadDashboard(),
             sessions: () => this.loadSessions(),
             recs: () => this.loadRecs(),
@@ -157,6 +173,150 @@ const Admin = {
     },
 
     _fail(err) { UI.toast(err.message, 'error'); },
+
+    // ---------- Hoje ----------
+    HELP_COLORS: { none: '#4CB68D', verbal: '#5B8DEF', gesture: '#F2B632', physical: '#E5604D' },
+    GOAL_STATUS: {
+        on_track: ['ok', 'no ritmo'], slow: ['warn', 'devagar'], stalled: ['off', 'parada'],
+        waiting: ['info', 'aguardando dados'], done: ['ok', 'concluída'],
+    },
+    ASK_EXAMPLES: [
+        'Que atividade fazer hoje e como conduzir?',
+        'Como diminuir a ajuda que eu dou nas atividades?',
+        'O que fazer quando erra várias vezes seguidas?',
+        'Como usar os interesses da criança nas atividades?',
+    ],
+
+    _goalRow(g) {
+        const a = App.activities[g.activity_type] || {};
+        const unit = { accuracy: '%', sessions: ' sessões', stars: ' estrelas' }[g.target_type] || '';
+        const pct = Math.min(100, Math.round((g.current_value / g.target_value) * 100));
+        const [cls, label] = this.GOAL_STATUS[g.status] || ['info', ''];
+        return `<div class="row">
+            <span class="pic" aria-hidden="true">${g.completed ? '🏆' : a.icon || '🎯'}</span>
+            <div class="grow"><b>${UI.esc(a.name || g.activity_type)}</b>${g.description ? ': ' + UI.esc(g.description) : ''}
+                ${label ? `<span class="pill ${cls}">${label}</span>` : ''}
+                <div class="meta">${g.current_value}${unit} de ${g.target_value}${unit}${g.forecast ? ' · ' + UI.esc(g.forecast) : ''}</div>
+                <div class="progress" role="progressbar" aria-label="Progresso da meta" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div></div>
+            ${g.id && !g.readonly ? `<button class="btn btn-outline btn-small" data-del-goal="${g.id}" aria-label="Apagar meta">🗑️</button>` : ''}
+        </div>`;
+    },
+
+    async loadToday() {
+        const box = document.getElementById('today-box');
+        if (this.chatPid !== this.pid) { this.chat = []; this.chatPid = this.pid; }
+        this._renderChat();
+        try {
+            const t = await API.get(`/ai/today/${this.pid}?tz=${new Date().getTimezoneOffset()}`);
+            const name = UI.esc(App.profile.name);
+            const status = t.mood
+                ? `<span class="pic" aria-hidden="true">${UI.pic(t.mood.icon)}</span><div>Hoje ${name} disse que está se sentindo <b>${UI.esc(t.mood.label.toLowerCase())}</b>.${t.mood.hard ? ' O plano abaixo prioriza atividades que já conhece; prefira sessões curtas e com pausas.' : ''}`
+                : `<span class="pic" aria-hidden="true">📅</span><div>${name} ainda não contou como está se sentindo hoje.`;
+            const done = t.sessions_today
+                ? `${t.sessions_today} ${t.sessions_today === 1 ? 'atividade feita' : 'atividades feitas'} hoje.`
+                : 'Nenhuma atividade feita hoje ainda.';
+            const plan = t.plan.map(p => {
+                const a = App.activities[p.activity] || {};
+                return `<div class="today-act">
+                    <div class="today-act-head"><span class="pic" aria-hidden="true">${UI.pic(a.icon || '⭐')}</span>
+                        <div><b>${UI.esc(p.name)}</b><div class="meta">Nível ${p.level}${p.done_today ? ' · <span class="pill ok">feita hoje</span>' : ''}</div></div></div>
+                    <ul>${p.reasons.slice(0, 2).map(r => `<li>${UI.esc(r)}</li>`).join('')}</ul>
+                    <p class="today-tip"><span aria-hidden="true">🤝</span> ${UI.esc(p.tip)}</p>
+                    <button class="btn btn-soft btn-small" data-highlight="${p.activity}">⭐ Destacar para a criança</button>
+                </div>`;
+            }).join('');
+            const icons = { positive: '📈', attention: '🤝', pattern: '🔎', help: '🖐️', suggestion: '⭐' };
+            const alerts = t.alerts.length ? t.alerts.map(r => `
+                <div class="row"><span class="pic" aria-hidden="true">${icons[r.type] || '💡'}</span>
+                    <div class="grow"><b>${UI.esc(r.title)}</b><div class="meta">${UI.esc(r.reasons[0] || r.message)}</div></div></div>`).join('')
+                : UI.empty('✅', 'Nada pedindo atenção agora.');
+            box.innerHTML = `
+                <div class="card today-status">${status}<div class="meta">${done}</div></div></div>
+                <div class="card" style="margin-bottom:16px">
+                    <h2><span aria-hidden="true">🗓️</span> Plano de hoje</h2>
+                    <p class="shared-note" style="margin-bottom:12px">Montado pelas regras do Lumina a partir dos interesses, metas e desempenho. Você decide o que fazer.</p>
+                    <div class="today-plan">${plan || UI.empty('🧩', 'Ative atividades na aba Plano para receber um plano.')}</div>
+                </div>
+                <div class="today-grid">
+                    <div class="card"><h2><span aria-hidden="true">🔔</span> Pede atenção</h2>
+                        <div class="list">${alerts}</div>
+                        ${t.pending ? `<button class="btn btn-outline btn-small" style="margin-top:12px" data-goto="recs">Ver todas as sugestões (${t.pending})</button>` : ''}</div>
+                    <div class="card"><h2><span aria-hidden="true">🎯</span> Metas</h2>
+                        <div class="list">${t.goals.length ? t.goals.map(g => this._goalRow({ ...g, readonly: true })).join('')
+                            : UI.empty('🎯', 'Nenhuma meta aberta. Crie metas para acompanhar a evolução.')}</div>
+                        <button class="btn btn-outline btn-small" style="margin-top:12px" data-goto="goals">${t.goals.length ? 'Ver metas' : 'Criar meta'}</button></div>
+                </div>`;
+            box.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', () => this.show(b.dataset.goto)));
+            box.querySelectorAll('[data-highlight]').forEach(b => b.addEventListener('click', async () => {
+                try {
+                    await API.put(`/plans/${this.pid}/${b.dataset.highlight}`, { recommended: true, enabled: true });
+                    UI.toast('Destacada com estrela no menu da criança', 'success');
+                    b.disabled = true;
+                } catch (err) { this._fail(err); }
+            }));
+            document.getElementById('ai-ask-note').textContent = t.assistant.configured
+                ? `Respostas do Google Gemini, com o progresso da criança como contexto. Não enviamos o nome, a foto nem o diário. São sugestões: não substituem os profissionais que acompanham a criança.`
+                : 'O Gemini não está configurado neste servidor (GEMINI_API_KEY). As respostas virão das regras do Lumina.';
+        } catch (err) { this._fail(err); }
+    },
+
+    /** Markdown simples da resposta (negrito, itálico, listas), sempre escapando o texto antes. */
+    _md(text) {
+        const inline = s => UI.esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<i>$2</i>');
+        const out = [];
+        let list = null;
+        for (const raw of String(text).split('\n')) {
+            const line = raw.trim();
+            const item = line.match(/^([-*•]|\d+[.)])\s+(.*)$/);
+            if (item) {
+                const tag = /\d/.test(item[1]) ? 'ol' : 'ul';
+                if (list !== tag) { if (list) out.push(`</${list}>`); out.push(`<${tag}>`); list = tag; }
+                out.push(`<li>${inline(item[2])}</li>`);
+                continue;
+            }
+            if (list) { out.push(`</${list}>`); list = null; }
+            if (!line) continue;
+            const head = line.match(/^#{1,4}\s+(.*)$/);
+            out.push(head ? `<p><b>${inline(head[1])}</b></p>` : `<p>${inline(line)}</p>`);
+        }
+        if (list) out.push(`</${list}>`);
+        return out.join('');
+    },
+
+    _renderChat(thinking = false) {
+        const log = document.getElementById('ai-ask-log');
+        log.innerHTML = this.chat.map(m => m.role === 'user'
+            ? `<div class="ai-msg user"><span class="sr-only">Você: </span>${UI.esc(m.text)}</div>`
+            : `<div class="ai-msg bot"><span class="sr-only">IA: </span>${this._md(m.text)}
+                <div class="meta">${m.source === 'gemini' ? '✨ Google Gemini' : '📏 Regras do Lumina'}</div></div>`).join('')
+            + (thinking ? '<div class="ai-msg bot thinking">Pensando…</div>' : '');
+        document.getElementById('ai-ask-clear').classList.toggle('hidden', !this.chat.length);
+        document.getElementById('ai-ask-examples').classList.toggle('hidden', this.chat.length > 0);
+        if (this.chat.length || thinking) log.lastElementChild?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    },
+
+    async ask() {
+        const input = document.getElementById('ai-ask-input');
+        const send = document.getElementById('ai-ask-send');
+        const question = input.value.trim();
+        if (!question || send.disabled) return;
+        const history = this.chat.slice(-8).map(m => ({ role: m.role, text: m.text.slice(0, 4000) }));
+        this.chat.push({ role: 'user', text: question });
+        input.value = '';
+        send.disabled = true;
+        this._renderChat(true);
+        try {
+            const r = await API.post(`/ai/ask/${this.pid}`, { question, history });
+            this.chat.push({ role: 'assistant', text: r.answer, source: r.source });
+        } catch (err) {
+            this.chat.pop();
+            input.value = question;
+            this._fail(err);
+        } finally {
+            send.disabled = false;
+            this._renderChat();
+        }
+    },
 
     // ---------- Progresso ----------
     async loadDashboard() {
@@ -181,6 +341,10 @@ const Admin = {
         const trend = change === null || s.accuracy === null ? ''
             : Math.abs(change) < 3 ? '<span class="pill info">estável</span>'
             : `<span class="pill ${change > 0 ? 'ok' : 'warn'}"><span aria-hidden="true">${change > 0 ? '▲' : '▼'}</span> ${Math.abs(Math.round(change))} pontos</span>`;
+        const indChange = s.independence_change;
+        const indTrend = indChange === null || indChange === undefined || s.independence === null ? ''
+            : Math.abs(indChange) < 3 ? '<span class="pill info">estável</span>'
+            : `<span class="pill ${indChange > 0 ? 'ok' : 'warn'}"><span aria-hidden="true">${indChange > 0 ? '▲' : '▼'}</span> ${Math.abs(Math.round(indChange))} pontos</span>`;
         const big = (pic, value, label, extra = '') =>
             `<div class="big-num"><span class="pic" aria-hidden="true">${pic}</span><b>${value}</b><span>${label}</span>${extra}</div>`;
         const extras = [
@@ -194,6 +358,7 @@ const Admin = {
             <div class="big-nums">
                 ${big('🧩', s.activities, s.activities === 1 ? 'atividade' : 'atividades')}
                 ${big('🎯', s.accuracy === null ? '–' : `${Math.round(s.accuracy)}%`, 'acerto de primeira', trend)}
+                ${big('🙌', s.independence === null ? '–' : `${Math.round(s.independence)}%`, 'feitas sem ajuda', indTrend)}
                 ${big('⏱️', UI.formatMinutes(s.minutes * 60000), 'de prática')}
             </div>
             <ul class="summary-extra">${extras.map(([pic, text]) => `<li><span aria-hidden="true">${pic}</span> ${text}</li>`).join('')}</ul>`;
@@ -232,6 +397,30 @@ const Admin = {
                 options: { responsive: true, maintainAspectRatio: false, scales: { ...pct, x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } } },
                     plugins: { legend: { display: false }, tooltip: { filter: c => c.raw !== null, callbacks: {
                         label: c => `${Math.round(c.raw)}% de acerto · ${daily[c.dataIndex].sessions} ${daily[c.dataIndex].sessions === 1 ? 'atividade' : 'atividades'}` } } }, ...noAnim },
+            });
+        }
+
+        // Ajuda por dia (RF08): barras empilhadas, da mais independente à mais apoiada
+        const helpDays = daily.filter(d => d.help && Object.keys(d.help).length);
+        const helpEmpty = !helpDays.length;
+        document.getElementById('chart-help').parentElement.classList.toggle('hidden', helpEmpty);
+        document.getElementById('help-empty').classList.toggle('hidden', !helpEmpty);
+        if (!helpEmpty) {
+            const first = daily.indexOf(helpDays[0]);
+            const days = daily.slice(Math.max(0, Math.min(first, daily.length - 7)));
+            this.charts.help = new Chart(document.getElementById('chart-help'), {
+                type: 'bar',
+                data: {
+                    labels: days.map(d => dayLabel(d.date)),
+                    datasets: Object.entries(this.HELP_COLORS).map(([k, color]) => ({
+                        label: UI.HELP_LEVELS[k], data: days.map(d => (d.help || {})[k] || 0), backgroundColor: color, borderRadius: 4,
+                    })),
+                },
+                options: { responsive: true, maintainAspectRatio: false,
+                    scales: { x: { stacked: true, grid: { display: false }, ticks: { maxTicksLimit: 10 } },
+                        y: { stacked: true, beginAtZero: true, grid: { color: grid }, ticks: { precision: 0 } } },
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } }, tooltip: { filter: c => c.raw > 0,
+                        callbacks: { label: c => `${c.dataset.label}: ${c.raw} ${c.raw === 1 ? 'sessão' : 'sessões'}` } } }, ...noAnim },
             });
         }
 
@@ -465,7 +654,7 @@ const Admin = {
             box.innerHTML = UI.empty('✅', 'Nenhuma recomendação pendente. Novas sugestões aparecem conforme a criança pratica.');
             return;
         }
-        const icons = { positive: '📈', attention: '🤝', pattern: '🔎', suggestion: '⭐', general: '💡' };
+        const icons = { positive: '📈', attention: '🤝', pattern: '🔎', help: '🖐️', suggestion: '⭐', general: '💡' };
         box.innerHTML = recs.map((r, i) => {
             const act = App.activities[r.activity];
             const many = r.keys.length > 1;
@@ -574,21 +763,9 @@ const Admin = {
         const select = document.getElementById('goal-activity');
         select.innerHTML = Object.values(App.activities).map(a => `<option value="${a.type}">${a.icon} ${UI.esc(a.name)}</option>`).join('');
         const box = document.getElementById('goals-list');
-        const unit = { accuracy: '%', sessions: ' sessões', stars: ' estrelas' };
         try {
             const goals = await API.get(`/goals/${this.pid}`);
-            box.innerHTML = goals.length ? goals.map(g => {
-                const a = App.activities[g.activity_type] || {};
-                const pct = Math.min(100, Math.round((g.current_value / g.target_value) * 100));
-                return `<div class="row">
-                    <span class="pic" aria-hidden="true">${g.completed ? '🏆' : a.icon || '🎯'}</span>
-                    <div class="grow"><b>${UI.esc(a.name || g.activity_type)}</b>: ${UI.esc(g.description || '')}
-                        ${g.completed ? '<span class="pill ok">concluída</span>' : ''}
-                        <div class="meta">${g.current_value}${unit[g.target_type]} de ${g.target_value}${unit[g.target_type]}</div>
-                        <div class="progress" role="progressbar" aria-label="Progresso da meta" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div></div>
-                    <button class="btn btn-outline btn-small" data-del-goal="${g.id}" aria-label="Apagar meta">🗑️</button>
-                </div>`;
-            }).join('') : UI.empty('🎯', 'Nenhuma meta ainda. Metas abertas também influenciam as recomendações.');
+            box.innerHTML = goals.length ? goals.map(g => this._goalRow(g)).join('') : UI.empty('🎯', 'Nenhuma meta ainda. Metas abertas também influenciam as recomendações.');
             box.querySelectorAll('[data-del-goal]').forEach(b => b.addEventListener('click', async () => {
                 if (!confirm('Apagar esta meta?')) return;
                 try { await API.delete(`/goals/${b.dataset.delGoal}`); this.loadGoals(); } catch (err) { this._fail(err); }

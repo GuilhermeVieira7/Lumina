@@ -9,9 +9,16 @@
 #
 # Regras de nível (tomada de decisão baseada em dados, ABA):
 #   - domínio: acerto >= critério nas N últimas sessões seguidas -> sugerir subir de nível
+#   - domínio com ajuda: acertou, mas com gesto ou ajuda física em alguma dessas sessões
+#     -> antes de subir, sugerir retirar a ajuda aos poucos (esvanecimento de dicas, ABA)
 #   - dificuldade recorrente: 2 das 3 últimas sessões abaixo de 50% -> sugerir descer
 #     de nível e aumentar os apoios
 #   - caso contrário -> manter e reforçar
+#
+# Padrões que cruzam dados (para o adulto observar):
+#   - oscilação grande, respostas lentas, queda no acerto
+#   - emoções x desempenho: acerto bem menor nos dias em que a criança disse
+#     estar triste, brava, com medo ou cansada ("Como estou?")
 #
 # Pontuação para sugerir a próxima atividade:
 #   + afinidade com os interesses registrados no perfil
@@ -19,18 +26,48 @@
 #   + desempenho na "zona de aprendizagem" (50% a 85%) ou atividade ainda não tentada
 #   + variedade: evita repetir as atividades mais recentes
 
-from datetime import datetime, timedelta
+from collections import Counter
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session as DBSession
 
 from data.activity_bank import ACTIVITY_BANK, DEFAULT_ENABLED, activity_name, max_level
-from models import ActivityPlan, Goal, Profile, RecommendationDecision, Response, Session, Settings
+from data.communication import MOODS_BY_KEY
+from models import ActivityPlan, Goal, MoodCheck, Profile, RecommendationDecision, Response, Session, Settings
 
 DEFAULT_MASTERY_THRESHOLD = 85
 DEFAULT_MASTERY_SESSIONS = 3
 DIFFICULTY_THRESHOLD = 50
+MOOD_GAP = 15          # pontos de acerto a menos nos dias difíceis para virar alerta
+MOOD_WINDOW_DAYS = 30
+
+# Nível de ajuda registrado pelo adulto em cada sessão (RF08), do mais ao menos independente
+HELP_LABELS = {"none": "sem ajuda", "verbal": "dica verbal", "gesture": "gesto", "physical": "ajuda física"}
+HEAVY_HELP = {"gesture", "physical"}
+
+
+def to_utc(moment: datetime) -> datetime:
+    """SQLite devolve datas sem fuso e o PostgreSQL com fuso: compara tudo em UTC sem fuso."""
+    if moment is not None and moment.tzinfo is not None:
+        return moment.astimezone(timezone.utc).replace(tzinfo=None)
+    return moment
+
+
+def accuracy_of(sessions) -> Optional[float]:
+    """Acerto de primeira somando as questões das sessões (e não a média das porcentagens)."""
+    correct = sum(s.correct or 0 for s in sessions)
+    answered = correct + sum(s.incorrect or 0 for s in sessions)
+    return round(correct / answered * 100, 1) if answered else None
+
+
+def independence_of(sessions) -> Optional[float]:
+    """% das sessões com ajuda registrada em que a criança fez sem ajuda."""
+    helped = [s for s in sessions if s.help_level]
+    if not helped:
+        return None
+    return round(sum(1 for s in helped if s.help_level == "none") / len(helped) * 100, 1)
 
 # Palavras dos interesses (perfil) que aproximam a criança de cada atividade
 INTEREST_KEYWORDS: Dict[str, List[str]] = {
@@ -105,14 +142,35 @@ class AIEngine:
         mastered = len(last_n) >= needed and all(a >= threshold for a in last_n)
         struggling = sum(1 for a in accuracies[:3] if a < DIFFICULTY_THRESHOLD) >= 2
 
+        # Acertar com a mão do adulto guiando não é domínio: primeiro retirar a ajuda
+        heavy = [s.help_level for s in recent[:needed] if s.help_level in HEAVY_HELP]
+        if mastered and heavy:
+            kinds = " e ".join(sorted({HELP_LABELS[h] for h in heavy}))
+            return {
+                "suggested_level": current_level,
+                "recommendation": "fade_help",
+                "reason": (
+                    f"Acertou {threshold}% ou mais nas {needed} últimas sessões, mas precisou de {kinds} "
+                    f"em {len(heavy)} delas. Antes de subir de nível, diminua a ajuda aos poucos "
+                    "(física → gesto → dica verbal → sem ajuda)."
+                ),
+                "avg_accuracy": round(avg_accuracy, 1),
+                "trend": round(trend, 1),
+            }
+
         if mastered and current_level < top_level:
             suggested = current_level + 1
+            unregistered = sum(1 for s in recent[:needed] if not s.help_level)
+            help_note = (
+                " Registre a ajuda dada nas sessões para a sugestão considerar também a independência."
+                if unregistered else " Fez sem gesto nem ajuda física."
+            )
             return {
                 "suggested_level": suggested,
                 "recommendation": "level_up",
                 "reason": (
                     f"Acertou {threshold}% ou mais nas {needed} últimas sessões seguidas "
-                    f"(critério de domínio). Sugestão: passar para o nível {suggested}."
+                    f"(critério de domínio). Sugestão: passar para o nível {suggested}.{help_note}"
                 ),
                 "avg_accuracy": round(avg_accuracy, 1),
                 "trend": round(trend, 1),
@@ -172,6 +230,40 @@ class AIEngine:
                 "suggestion": "Pode ser cansaço ou perda de interesse. Considere pausas ou outra atividade.",
             })
         return patterns
+
+    @staticmethod
+    def mood_performance(db: DBSession, profile_id: int, days: int = MOOD_WINDOW_DAYS) -> Optional[dict]:
+        """Comparar o acerto nos dias difíceis ("Como estou?") com os outros dias.
+
+        Só compara com pelo menos 2 sessões de cada lado. Devolve None sem dados suficientes.
+        """
+        since = datetime.utcnow() - timedelta(days=days)
+        moods = [m for m in db.query(MoodCheck).filter(MoodCheck.profile_id == profile_id).all()
+                 if m.created_at and to_utc(m.created_at) >= since]
+        hard_moods = [m for m in moods if MOODS_BY_KEY.get(m.mood, {}).get("hard")]
+        if not hard_moods:
+            return None
+        hard_days = {to_utc(m.created_at).date() for m in hard_moods}
+        sessions = [
+            s for s in db.query(Session).filter(Session.profile_id == profile_id, Session.is_practice == False)  # noqa: E712
+            if s.created_at and to_utc(s.created_at) >= since
+        ]
+        on_hard = [s for s in sessions if to_utc(s.created_at).date() in hard_days]
+        others = [s for s in sessions if to_utc(s.created_at).date() not in hard_days]
+        if len(on_hard) < 2 or len(others) < 2:
+            return None
+        hard_acc, other_acc = accuracy_of(on_hard), accuracy_of(others)
+        if hard_acc is None or other_acc is None:
+            return None
+        common = Counter(m.mood for m in hard_moods).most_common(2)
+        return {
+            "hard_accuracy": hard_acc,
+            "other_accuracy": other_acc,
+            "gap": round(other_acc - hard_acc, 1),
+            "hard_days": len(hard_days),
+            "hard_sessions": len(on_hard),
+            "moods": [MOODS_BY_KEY[k]["label"].lower() for k, _ in common],
+        }
 
     @staticmethod
     def score_activities(db: DBSession, profile: Profile) -> List[dict]:
@@ -258,6 +350,15 @@ class AIEngine:
                     "message": analysis["reason"],
                     "reasons": [analysis["reason"]], "priority": "high",
                 })
+            elif analysis["recommendation"] == "fade_help":
+                recommendations.append({
+                    "key": f"help:{activity_type}:fade",
+                    "kind": "pattern", "type": "help", "activity": activity_type,
+                    "current_level": current,
+                    "title": f"{name}: acerta, mas ainda com ajuda",
+                    "message": analysis["reason"],
+                    "reasons": [analysis["reason"]], "priority": "medium",
+                })
 
             for pattern in AIEngine.identify_error_patterns(db, profile_id, activity_type):
                 recommendations.append({
@@ -267,6 +368,22 @@ class AIEngine:
                     "message": pattern["suggestion"],
                     "reasons": [pattern["suggestion"]], "priority": "medium",
                 })
+
+        mood = AIEngine.mood_performance(db, profile_id)
+        if mood and mood["gap"] >= MOOD_GAP:
+            felt = " ou ".join(mood["moods"])
+            recommendations.append({
+                "key": "mood:hard_days", "kind": "pattern", "type": "pattern", "activity": None,
+                "title": "Nos dias difíceis, o acerto cai",
+                "message": "Cruzamento do \"Como estou?\" com o desempenho dos últimos 30 dias.",
+                "reasons": [
+                    f"Nos {mood['hard_days']} dias em que disse estar {felt}, acertou {mood['hard_accuracy']:.0f}% "
+                    f"de primeira, contra {mood['other_accuracy']:.0f}% nos outros dias.",
+                    "Nesses dias, prefira atividades que a criança já domina, sessões mais curtas, "
+                    "pausas e o Modo Baixo Estímulo.",
+                ],
+                "priority": "medium",
+            })
 
         if profile:
             plans = {p.activity_type: p for p in db.query(ActivityPlan).filter(ActivityPlan.profile_id == profile_id)}
@@ -302,9 +419,11 @@ class AIEngine:
             return False
         newer = db.query(Session.id).filter(
             Session.profile_id == profile_id,
-            Session.activity_type == rec["activity"],
             Session.id > (decision.last_session_id or 0),
-        ).first()
+        )
+        if rec.get("activity"):
+            newer = newer.filter(Session.activity_type == rec["activity"])
+        newer = newer.first()
         return newer is None
 
     @staticmethod

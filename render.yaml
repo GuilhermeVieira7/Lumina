@@ -21,6 +21,9 @@ services:
       # Chave dos logins (JWT): o Render gera um valor longo e aleatório
       - key: SECRET_KEY
         generateValue: true
+      # "Pergunte à IA" (Google Gemini): o valor é colado no painel do Render
+      - key: GEMINI_API_KEY
+        sync: false
 
 databases:
   - name: lumina-db

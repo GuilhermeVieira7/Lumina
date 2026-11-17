@@ -298,6 +298,7 @@
             <button class="tab" role="tab" data-group="config"><span class="tab-ico" aria-hidden="true">⚙️</span> Ajustes</button>
         </div>
         <div class="subtabs" role="group" aria-label="Partes da seção">
+            <button data-tab="today" data-in="progress">Hoje</button>
             <button data-tab="dashboard" data-in="progress">Resumo</button>
             <button data-tab="recs" data-in="progress">Sugestões <span class="pill info recs-count hidden"></span></button>
             <button data-tab="sessions" data-in="diary">Sessões</button>
@@ -309,8 +310,29 @@
             <button data-tab="settings" data-in="config">Preferências</button>
         </div>
 
+        <!-- Hoje: plano do dia, alertas, metas e "Pergunte à IA" -->
+        <div class="tab-panel active" id="tab-today">
+            <div id="today-box" aria-live="polite"></div>
+            <div class="card ai-ask" id="ai-ask">
+                <h2><span aria-hidden="true">💬</span> Pergunte à IA</h2>
+                <p class="shared-note" id="ai-ask-note"></p>
+                <div id="ai-ask-log" class="ai-log" aria-live="polite"></div>
+                <form id="ai-ask-form">
+                    <div class="field">
+                        <label for="ai-ask-input">O que você quer saber para ajudar a criança?</label>
+                        <textarea id="ai-ask-input" maxlength="1000" rows="3" placeholder="Ex.: ela trava nas atividades de números. O que posso fazer em casa?"></textarea>
+                    </div>
+                    <div class="chip-row ai-examples" id="ai-ask-examples"></div>
+                    <div class="rec-actions">
+                        <button class="btn" type="submit" id="ai-ask-send"><span aria-hidden="true">✨</span> Perguntar</button>
+                        <button class="btn btn-outline btn-small hidden" type="button" id="ai-ask-clear">Nova conversa</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Progresso -->
-        <div class="tab-panel active" id="tab-dashboard">
+        <div class="tab-panel" id="tab-dashboard">
             <div class="toolbar">
                 <div class="segmented" role="group" aria-label="Período">
                     <button data-days="7">7 dias</button>
@@ -326,6 +348,8 @@
             <div class="charts">
                 <div class="card"><h2>Acerto de primeira por dia</h2><div class="chart-box"><canvas id="chart-timeline" role="img" aria-label="Gráfico do acerto médio por dia"></canvas></div>
                     <p id="timeline-empty" class="shared-note hidden">Nenhuma atividade no período.</p></div>
+                <div class="card"><h2>Ajuda que a criança precisou</h2><div class="chart-box"><canvas id="chart-help" role="img" aria-label="Gráfico do nível de ajuda por dia"></canvas></div>
+                    <p id="help-empty" class="shared-note hidden">Nenhuma ajuda registrada no período. Registre na aba Diário &gt; Sessões quanta ajuda a criança precisou: é assim que o Lumina mede a independência.</p></div>
                 <div class="card"><h2>Acerto por área de habilidade</h2><div class="chart-box"><canvas id="chart-areas" role="img" aria-label="Gráfico de acerto por área"></canvas></div>
                     <p id="areas-note" class="shared-note hidden"></p></div>
                 <div class="card"><h2>Acerto por atividade</h2><div class="chart-box"><canvas id="chart-activities" role="img" aria-label="Gráfico por atividade"></canvas></div></div>
