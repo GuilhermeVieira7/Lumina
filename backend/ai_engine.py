@@ -325,8 +325,9 @@ class AIEngine:
             a for (a,) in db.query(Session.activity_type)
             .filter(Session.profile_id == profile_id, Session.is_practice == False)  # noqa: E712
             .distinct()
+            if a in ACTIVITY_BANK  # sessões de atividades que saíram do banco não geram sugestões
         ]
-        for activity_type in played:
+        for activity_type in sorted(played):
             analysis = AIEngine.analyze_performance(db, profile_id, activity_type)
             name = activity_name(activity_type)
             plan = _plan(db, profile_id, activity_type)

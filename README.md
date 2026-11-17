@@ -70,7 +70,13 @@ Como a segurança do sistema funciona: [docs/SEGURANCA.md](docs/SEGURANCA.md).
 13. **Relatório em PDF** — Painel → Progresso → "Relatório PDF".
 14. **API REST documentada** — http://127.0.0.1:8000/api/docs (Swagger interativo).
 
-Testes automatizados: `pip install -r requirements-dev.txt` e `pytest` na raiz do projeto.
+Testes automatizados: `pip install -r requirements-dev.txt` e `pytest` na raiz do projeto (inclui `tests/test_robustez.py`: dados inválidos, dados antigos, criança sem dados e cada tipo de falha do Gemini, simulado).
+
+Teste de ponta a ponta no navegador (cadastro → área da criança → atividade sem internet → painel inteiro → PDF → Pergunte à IA → profissional), com o Docker rodando:
+
+```bash
+docker run --rm --network container:tea_application -v "%cd%/tests/e2e:/e2e" -w /e2e mcr.microsoft.com/playwright:v1.49.0-jammy sh -c "npm i -s playwright@1.49.0 && node fluxo_completo.js"
+```
 
 > Guia detalhado de avaliação acadêmica: [`docs/INSTRUÇÕES_AVALIAÇÃO.md`](docs/INSTRUÇÕES_AVALIAÇÃO.md)
 

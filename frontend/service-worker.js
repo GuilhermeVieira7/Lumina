@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lumina-v10';
+const CACHE_NAME = 'lumina-v11';
 const STATIC_ASSETS = [
     '/',
     '/css/style.css',
@@ -45,10 +45,13 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') return;
     const isApi = event.request.url.includes('/api/');
+    // Perguntas das atividades são conteúdo genérico (sem dados da criança): guardá-las deixa
+    // a criança fazer sem internet as atividades que já abriu; o resultado vai para a fila do app.
+    const isQuestions = /\/api\/activities\/[a-z_]+\/questions/.test(event.request.url);
     event.respondWith(
         fetch(event.request)
             .then(response => {
-                if (!isApi && response.status === 200 && event.request.url.startsWith(self.location.origin)) {
+                if ((!isApi || isQuestions) && response.status === 200 && event.request.url.startsWith(self.location.origin)) {
                     const clone = response.clone();
                     caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
                 }

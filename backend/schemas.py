@@ -3,9 +3,11 @@
 # Sistema de Apoio Educacional para TEA
 # ==========================================
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Literal, Optional, List
 from datetime import datetime, date
+
+from data.activity_bank import ACTIVITY_BANK
 
 
 # ---- Auth Schemas ----
@@ -83,24 +85,58 @@ class ProfileResponse(BaseModel):
 
 # ---- Session Schemas ----
 
+MAX_SESSION_MS = 6 * 60 * 60 * 1000   # uma sessão não passa de 6 horas
+MAX_RESPONSE_MS = 10 * 60 * 1000      # nem uma resposta de 10 minutos
+
+
+def _clamp(value: int, top: int) -> int:
+    """Tempo medido no navegador: aba esquecida aberta não pode virar dado absurdo."""
+    return max(0, min(int(value), top))
+
+
 class ResponseCreate(BaseModel):
-    question_index: int
+    question_index: int = Field(..., ge=0, le=100)
     is_correct: bool
     response_time: int  # ms
-    attempts: int = 1
+    attempts: int = Field(1, ge=1, le=50)
+
+    @field_validator("response_time")
+    @classmethod
+    def _response_time(cls, v):
+        return _clamp(v, MAX_RESPONSE_MS)
+
 
 class SessionCreate(BaseModel):
+    """Dados que alimentam a IA: valores impossíveis são recusados para não contaminar as análises."""
     profile_id: int
-    activity_type: str
-    level: int = 1
-    total_questions: int
-    correct: int
-    incorrect: int
+    activity_type: str = Field(..., max_length=30)
+    level: int = Field(1, ge=1, le=10)
+    total_questions: int = Field(..., ge=1, le=100)
+    correct: int = Field(..., ge=0)
+    incorrect: int = Field(..., ge=0)
     total_time: int  # ms
     is_practice: bool = False
     reward: Optional[str] = Field(None, max_length=60)
     timed_out: bool = False
-    responses: List[ResponseCreate] = []
+    responses: List[ResponseCreate] = Field(default_factory=list, max_length=100)
+
+    @field_validator("total_time")
+    @classmethod
+    def _total_time(cls, v):
+        return _clamp(v, MAX_SESSION_MS)
+
+    @field_validator("activity_type")
+    @classmethod
+    def _known_activity(cls, v):
+        if v not in ACTIVITY_BANK:
+            raise ValueError("Atividade desconhecida")
+        return v
+
+    @model_validator(mode="after")
+    def _counts(self):
+        if self.correct + self.incorrect > self.total_questions:
+            raise ValueError("Acertos e erros somam mais que o total de questões")
+        return self
 
 class SessionResponse(BaseModel):
     id: int
@@ -195,10 +231,23 @@ class AchievementCheckResponse(BaseModel):
 
 class GoalCreate(BaseModel):
     profile_id: int
-    activity_type: str
+    activity_type: str = Field(..., max_length=30)
     target_type: str  # accuracy, stars, sessions
-    target_value: float
-    description: Optional[str] = None
+    target_value: float = Field(..., gt=0, le=1000)
+    description: Optional[str] = Field(None, max_length=200)
+
+    @field_validator("activity_type")
+    @classmethod
+    def _known_activity(cls, v):
+        if v not in ACTIVITY_BANK:
+            raise ValueError("Atividade desconhecida")
+        return v
+
+    @model_validator(mode="after")
+    def _accuracy_limit(self):
+        if self.target_type == "accuracy" and self.target_value > 100:
+            raise ValueError("A meta de acerto vai até 100%")
+        return self
 
 class GoalResponse(BaseModel):
     id: int

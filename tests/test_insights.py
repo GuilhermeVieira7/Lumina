@@ -144,7 +144,7 @@ def test_ask_context_has_no_child_name(client, monkeypatch):
 
     def fake_call(context, question, history):
         sent["context"] = context
-        return "Resposta de teste"
+        return "Resposta de teste", assistant.model_name()
 
     monkeypatch.setenv("GEMINI_API_KEY", "teste")
     monkeypatch.setattr(assistant, "_call_gemini", fake_call)

@@ -190,7 +190,7 @@ const Admin = {
     _goalRow(g) {
         const a = App.activities[g.activity_type] || {};
         const unit = { accuracy: '%', sessions: ' sessões', stars: ' estrelas' }[g.target_type] || '';
-        const pct = Math.min(100, Math.round((g.current_value / g.target_value) * 100));
+        const pct = g.target_value > 0 ? Math.max(0, Math.min(100, Math.round((g.current_value / g.target_value) * 100))) : 0;
         const [cls, label] = this.GOAL_STATUS[g.status] || ['info', ''];
         return `<div class="row">
             <span class="pic" aria-hidden="true">${g.completed ? '🏆' : a.icon || '🎯'}</span>
@@ -300,21 +300,23 @@ const Admin = {
         const send = document.getElementById('ai-ask-send');
         const question = input.value.trim();
         if (!question || send.disabled) return;
-        const history = this.chat.slice(-8).map(m => ({ role: m.role, text: m.text.slice(0, 4000) }));
-        this.chat.push({ role: 'user', text: question });
+        const pid = this.pid;
+        const chat = this.chat;  // a resposta vai para a conversa desta criança, mesmo se trocarem no meio
+        const history = chat.slice(-8).map(m => ({ role: m.role, text: m.text.slice(0, 4000) }));
+        chat.push({ role: 'user', text: question });
         input.value = '';
         send.disabled = true;
         this._renderChat(true);
         try {
-            const r = await API.post(`/ai/ask/${this.pid}`, { question, history });
-            this.chat.push({ role: 'assistant', text: r.answer, source: r.source });
+            const r = await API.post(`/ai/ask/${pid}`, { question, history });
+            chat.push({ role: 'assistant', text: r.answer, source: r.source });
         } catch (err) {
-            this.chat.pop();
-            input.value = question;
+            chat.pop();
+            if (this.pid === pid) input.value = question;
             this._fail(err);
         } finally {
             send.disabled = false;
-            this._renderChat();
+            if (this.pid === pid && this.chat === chat) this._renderChat();
         }
     },
 
