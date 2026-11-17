@@ -405,26 +405,33 @@ const Activity = {
         let medals = [];
 
         if (done) {
+            const payload = {
+                profile_id: App.profile.id,
+                activity_type: this.plan.activity_type,
+                level: this.plan.level,
+                total_questions: done,
+                correct: firstTry,
+                incorrect: done - firstTry,
+                total_time: Date.now() - this.sessionStart,
+                is_practice: this.practice,
+                reward: this.reward ? `${this.reward.icon} ${this.reward.label}` : null,
+                timed_out: this.timedOut,
+                responses: this.responses,
+            };
             try {
-                await API.post('/sessions', {
-                    profile_id: App.profile.id,
-                    activity_type: this.plan.activity_type,
-                    level: this.plan.level,
-                    total_questions: done,
-                    correct: firstTry,
-                    incorrect: done - firstTry,
-                    total_time: Date.now() - this.sessionStart,
-                    is_practice: this.practice,
-                    reward: this.reward ? `${this.reward.icon} ${this.reward.label}` : null,
-                    timed_out: this.timedOut,
-                    responses: this.responses,
-                });
+                await API.post('/sessions', payload);
                 if (!this.practice) {
-                    const check = await API.post(`/achievements/check/${App.profile.id}`);
+                    const check = await API.post(`/achievements/check/${App.profile.id}`).catch(() => ({}));
                     medals = check.newly_unlocked || [];
                 }
             } catch (err) {
-                UI.toast('Não foi possível salvar a sessão: ' + err.message, 'error');
+                // Sem internet ou servidor fora do ar: a atividade não se perde
+                if (err.offline || err.status >= 500) {
+                    API.queueSession(payload);
+                    UI.toast('Sem conexão: a atividade foi guardada no aparelho e será salva quando a internet voltar.', 'info');
+                } else {
+                    UI.toast('Não foi possível salvar a sessão: ' + err.message, 'error');
+                }
             }
         }
 

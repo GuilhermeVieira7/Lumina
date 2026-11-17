@@ -56,6 +56,11 @@ const App = {
         this.rewardOptions = options.rewards;
         this.moodOptions = moods;
         await this.loadProfiles();
+        this.sendPendingSessions();
+        if (!this._onlineWired) {
+            this._onlineWired = true;
+            window.addEventListener('online', () => this.sendPendingSessions());
+        }
 
         if (!this.profiles.length && this.user.role !== 'therapist') {
             UI.showScreen('select-screen');
@@ -63,6 +68,12 @@ const App = {
             return;
         }
         UI.showScreen('select-screen');
+    },
+
+    /** Envia as atividades feitas sem internet assim que a conexão voltar. */
+    async sendPendingSessions() {
+        const sent = await API.flushPending();
+        if (sent) UI.toast(`${sent} ${sent === 1 ? 'atividade feita sem internet foi salva' : 'atividades feitas sem internet foram salvas'}`, 'success');
     },
 
     async loadProfiles() {

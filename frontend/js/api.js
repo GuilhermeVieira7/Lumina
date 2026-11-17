@@ -22,34 +22,83 @@ const API = {
             headers['Authorization'] = `Bearer ${this.token}`;
         }
 
+        const fail = (message, status) => Object.assign(new Error(message), { status });
+
+        let res;
         try {
-            const res = await fetch(`${this.BASE_URL}${path}`, {
+            res = await fetch(`${this.BASE_URL}${path}`, {
                 method,
                 headers,
                 body: body ? JSON.stringify(body) : null,
             });
-
-            if (res.status === 401 && !path.startsWith('/auth/login')) {
-                this.clearToken();
-                if (window.AuthController) AuthController.expire();
-                throw new Error('Sessão expirada. Faça login novamente.');
-            }
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                const detail = Array.isArray(data.detail) ? 'Confira os campos preenchidos' : data.detail;
-                throw new Error(detail || 'Erro na requisição');
-            }
-
-            return data;
         } catch (error) {
-            if (error.message === 'Failed to fetch') {
-                console.warn('[API] Servidor offline ou sem conexão');
-                throw new Error('Sem conexão com o servidor');
-            }
-            throw error;
+            // Chrome, Firefox e Safari dão mensagens diferentes; todos lançam TypeError sem rede
+            console.warn('[API] Servidor offline ou sem conexão', error);
+            throw Object.assign(fail('Sem conexão com o servidor', 0), { offline: true });
         }
+
+        if (res.status === 401 && !path.startsWith('/auth/login')) {
+            this.clearToken();
+            if (window.AuthController) AuthController.expire();
+            throw fail('Sessão expirada. Faça login novamente.', 401);
+        }
+
+        // Página de erro da hospedagem (ex.: 502 enquanto o servidor acorda) não é JSON
+        let data = null;
+        try { data = await res.json(); } catch { data = null; }
+
+        if (!res.ok) {
+            if (!data) throw fail(res.status >= 500 ? 'O servidor está iniciando ou indisponível. Tente de novo em instantes.' : 'Erro na requisição', res.status);
+            const detail = Array.isArray(data.detail) ? 'Confira os campos preenchidos' : data.detail;
+            throw fail(detail || 'Erro na requisição', res.status);
+        }
+        if (data === null) throw fail('Resposta inválida do servidor', res.status);
+        return data;
+    },
+
+    // ---- Sessões feitas sem internet: guardadas no aparelho e enviadas depois ----
+    PENDING_KEY: 'lumina_pending_sessions',
+    _flushing: false,
+
+    _pending() {
+        try { return JSON.parse(localStorage.getItem(this.PENDING_KEY) || '[]'); } catch { return []; }
+    },
+
+    _savePending(list) {
+        try { localStorage.setItem(this.PENDING_KEY, JSON.stringify(list.slice(-50))); } catch { /* armazenamento indisponível */ }
+    },
+
+    queueSession(payload) {
+        const list = this._pending();
+        list.push(payload);
+        this._savePending(list);
+    },
+
+    pendingCount() { return this._pending().length; },
+
+    /** Envia as sessões guardadas. Descarta só as que o servidor recusa de vez (dados inválidos, criança apagada). */
+    async flushPending() {
+        if (!this.token || this._flushing) return 0;
+        const list = this._pending();
+        if (!list.length) return 0;
+        this._flushing = true;
+        let sent = 0;
+        const keep = [];
+        try {
+            for (const payload of list) {
+                try {
+                    await this.post('/sessions', payload);
+                    sent++;
+                } catch (err) {
+                    if (![400, 403, 404, 422].includes(err.status)) keep.push(payload);
+                }
+            }
+        } finally {
+            // Sessões guardadas durante o envio continuam na fila
+            this._savePending(keep.concat(this._pending().slice(list.length)));
+            this._flushing = false;
+        }
+        return sent;
     },
 
     get(path) { return this.request('GET', path); },
